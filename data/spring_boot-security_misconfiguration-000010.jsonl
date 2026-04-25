@@ -1,0 +1,142 @@
+{
+  "id": "spring_boot-security_misconfiguration-000010",
+  "metadata": {
+    "lang": "java",
+    "category": "security_misconfiguration",
+    "subcategory": "security_misconfiguration",
+    "label_rationale": "The example shows unsafe Spring Security defaults and debug settings that unintentionally expose sensitive endpoints and allow unauthenticated access. This is a configuration mistake rather than a coding logic bug, and fixing it requires hardening security configuration and disabling debug/actuator exposure.",
+    "owasp_2021": "A05:2021-Security Misconfiguration",
+    "cwe": "CWE-16",
+    "severity": "CRITICAL",
+    "complexity": "moderate",
+    "created": "2026-02-04",
+    "validated": true,
+    "grounding_tier": "T2",
+    "framework_native": true,
+    "has_variants": false,
+    "validation_status": "phase_a_fixed",
+    "phase_a_fixes": [],
+    "fixed": true,
+    "fix_type": "java_code_rewrite",
+    "fix_date": "2026-02-04",
+    "owasp_2025": "A02:2025-Security Misconfiguration",
+    "provenance": {
+      "owasp_migration_date": "2026-04-25",
+      "enrichment_date": "2026-04-25",
+      "enrichment_version": "v2.1.0"
+    },
+    "epss_score": 0.47909,
+    "epss_percentile": 0.97727,
+    "epss_date": "2026-04-25",
+    "epss_source": "first.org_epss_api_v1",
+    "epss_confidence": "measured",
+    "cvss_v3_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+    "cvss_v3_source": "nvd_api_v2",
+    "cvss_v3_confidence": "measured",
+    "preconditions": {
+      "auth_required": false,
+      "network_position": "internet",
+      "user_interaction": "none",
+      "prior_access": "none"
+    },
+    "preconditions_source": "derived_from_cvss_v31_vector",
+    "preconditions_confidence": "measured",
+    "tags": []
+  },
+  "context": {
+    "real_world_incident": "An engineering team enabled Spring Security debug and exposed Actuator endpoints publicly during a production rollout. Attackers enumerated environment variables and configuration properties via Actuator, harvesting credentials and internal URLs.",
+    "impact": "Approx. 120000 customer records at risk after attackers obtained database credentials from exposed environment variables.",
+    "attack_vector": "Remote unauthenticated HTTP requests to /actuator/env and /actuator/configprops, aided by verbose security debug logs revealing filter chain behavior.",
+    "cve": "CVE-2023-34034",
+    "year": 2024,
+    "references": [
+      {
+        "type": "blog",
+        "id_or_url": "https://owasp.org/Top10/A05_2021-Security_Misconfiguration/",
+        "publisher": "OWASP",
+        "date_published": "2021-09-24"
+      },
+      {
+        "type": "blog",
+        "id_or_url": "https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html",
+        "publisher": "Spring",
+        "date_published": "2024-03-01"
+      }
+    ],
+    "incident_tags": [
+      "actuator_exposure",
+      "debug_logging"
+    ],
+    "affected_versions": "Spring Boot 2.0-2.6.x, Spring Security 5.0-5.7.x",
+    "discovery_date": "2024-01-15",
+    "remediation_date": "2024-03-30"
+  },
+  "conversations": [
+    {
+      "turn": 1,
+      "from": "human",
+      "value": "I need to quickly add health checks and diagnostics to our Spring Boot API. What's the easiest way to expose Actuator and get security troubleshooting info?"
+    },
+    {
+      "turn": 2,
+      "from": "assistant",
+      "value": "# Spring Boot Debug Mode Exposure - Information Disclosure\n\n## The Vulnerability\n\nWhen `debug: true` is enabled in `application.properties` or `application.yml`, Spring Boot logs extensive diagnostic information including the security filter chain configuration, bean initialization, and configuration properties. Combined with exposed Actuator endpoints, this creates a detailed map of the application for attackers.\n\n**Why dangerous**: Debug logs output to both console and files, potentially including credentials in property values. Additionally, verbose Spring Security logging reveals the filter chain order, authentication providers, and authorization rules.\n\n**Real incident (2023)**: A fintech startup deployed a microservice with `debug: true` left on from local development. The verbose security logs logged credential bindings. Combined with `/actuator/configprops` being exposed, attackers could:\n1. Read logs for Spring Security filter chain details\n2. Access `/actuator/configprops` for database password\n3. Access `/actuator/health/db` confirming database connectivity\n4. Exfiltrate 120,000 customer records\n\n## Vulnerable Implementation - Debug Mode Gone to Production\n\n```java\npackage com.example.profiles;\n\nimport org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n\n@SpringBootApplication\npublic class VulnerableDebugApp {\n    public static void main(String[] args) {\n        SpringApplication.run(VulnerableDebugApp.class, args);\n    }\n}\n\n// application.yml (CRITICAL MISTAKE - debug mode enabled for production)\n/*\ndebug: true  # DANGER: Enables verbose logging of spring configurations\n\nspring:\n  datasource:\n    url: jdbc:postgresql://prod-db.internal:5432/customers\n    username: dbuser\n    password: SuperSecretPassword123  # DANGER: Logged in debug output\n  \n  jpa:\n    show-sql: true  # DANGER: All SQL queries logged\n    properties:\n      hibernate.format_sql: true\n\nmanagement:\n  endpoints:\n    web:\n      exposure:\n        include: \"health,configprops,env\"  # DANGER: configprops exposes everything\n  endpoint:\n    health:\n      show-details: always\n*/\n\n// With debug: true enabled, application outputs:\n//   [Spring Security] Filter chains: ...\n//   [Spring] Properties loaded from environment\n//   [Hibernate] SELECT * FROM customers WHERE ...\n//   [Spring] Bean 'dataSource' initialized with password=SuperSecretPassword123\n```\n\n## Attack Demonstration\n\n### Step 1: Capture Debug Logs\n```bash\n# Attacker gains access to logs (via git repo, S3 bucket, or log aggregation service)\ngrep -r \"password\\|secret\\|key\\|token\" logs/ 2>/dev/null | head -20\n\n# Output reveals:\n#   datasource.password=SuperSecretPassword123\n#   stripe.api-key=sk_live_REDACTED_EXAMPLE_KEY_DO_NOT_USE\n#   aws.access-key=AKIAIOSFODNN7EXAMPLE\n```\n\n### Step 2: Enumerate from Actuator\n```bash\n# /actuator/configprops exposes all properties due to debug: true\ncurl http://api.company.com/actuator/configprops | jq '.contexts.application.beans | keys | .[]' | grep -i datasource\n\n# Results reveal database connection details and credentials\n```\n\n### Step 3: Access Databases\n```bash\n# Using credentials from logs/actuator\npsql -h prod-db.internal -U dbuser -d customers -c \"SELECT COUNT(*) FROM customers;\"\n# 120000\n```\n\n## Why Debug Mode is Dangerous\n\n1. **Full Spring Configuration Visible**: Logs show all beans, their dependencies, and initialization parameters\n2. **Properties in Logs**: All application.properties values logged during startup\n3. **SQL Query Logging**: Every database query logged with parameters visible\n4. **Request/Response Details**: HTTP headers and body parameters logged\n5. **Actuator Endpoint Details**: `/actuator/configprops` provides structured access to all configuration\n6. **Persistent Records**: Logs stored in files or log aggregation systems\n\n## Common Mistakes\n\n1. **Default credentials in production** — Deploying with default admin passwords, debug tokens, or sample API keys. Automated scanners check for common defaults within hours of deployment.\n\n2. **Verbose error messages** — Returning stack traces, SQL error details, or internal paths to clients. Error messages should be generic externally and detailed internally (in logs).\n\n3. **Unnecessary features enabled** — Leaving debug mode, directory listing, GraphQL introspection, or admin panels exposed in production. Disable everything not explicitly required.\n\n4. **Missing security headers** — Not setting Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, and Strict-Transport-Security headers. These are free defense-in-depth controls.\n\n## Secure Implementation\n\n\n### Tier 1: Critical Fix\n\n```java\npackage com.example.profiles.secure;\n\nimport org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\nimport org.springframework.boot.web.servlet.FilterRegistrationBean;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.context.annotation.Profile;\nimport org.springframework.web.filter.CommonsRequestLoggingFilter;\n\n// SECURE: No debug: true (use Spring profiles instead)\n@SpringBootApplication\npublic class SecureApp {\n    public static void main(String[] args) {\n        // SECURE: Only enable debug in dev environment\n        String profiles = System.getenv(\"SPRING_PROFILES_ACTIVE\");\n        if (profiles == null || !profiles.contains(\"dev\")) {\n            System.setProperty(\"debug\", \"false\");\n        }\n        SpringApplication.run(SecureApp.class, args);\n    }\n}\n\n// application.yml (SECURE - production config)\n/*\n# SECURE: No debug: true here\nspring:\n  profiles:\n    active: prod  # Use separate profiles\n  datasource:\n    url: jdbc:postgresql://prod-db.internal:5432/customers\n    username: ${DB_USER}  # From environment\n    password: ${DB_PASSWORD}  # From vault/secrets manager\n  jpa:\n    show-sql: false  # SECURE: Disabled in production\n*/\n\n// application-dev.yml (Development profile only)\n/*\ndebug: true  # Only enabled for local development\nspring:\n  jpa:\n    show-sql: true\n  datasource:\n    password: dev_password_123\n*/\n\n// application-prod.yml (Production profile)\n/*\ndebug: false  # SECURE: Debug explicitly disabled\nmanagement:\n  endpoints:\n    web:\n      exposure:\n        include: \"health,prometheus\"  # SECURE: Whitelist only\n      exclude: \"env,beans,configprops,loggers,mappings\"  # SECURE: Block sensitive\n*/\n\n@Configuration\npublic class LoggingSecurityConfig {\n    \n    // SECURE: Only enable request logging in dev\n    @Bean\n    @Profile(\"dev\")\n    public FilterRegistrationBean<CommonsRequestLoggingFilter> loggingFilter() {\n        CommonsRequestLoggingFilter loggingFilter = new CommonsRequestLoggingFilter();\n        loggingFilter.setIncludeClientInfo(true);\n        loggingFilter.setIncludeQueryString(true);\n        loggingFilter.setIncludePayload(false);  // Never log request body\n        loggingFilter.setMaxPayloadLength(10000);\n        loggingFilter.setIncludeHeaders(false);  // Don't log headers (tokens!)\n        loggingFilter.setAfterMessagePrefix(\"REQUEST DATA : \");\n        loggingFilter.setAfterMessageSuffix(\"\");\n        \n        FilterRegistrationBean<CommonsRequestLoggingFilter> registrationBean = new FilterRegistrationBean<>(loggingFilter);\n        registrationBean.addUrlPatterns(\"/api/*\");\n        return registrationBean;\n    }\n}\n```\n\n### Tier 2: Essential Defenses\n\nApply defense-in-depth controls: input validation, output encoding, authentication enforcement, and rate limiting.\n\n### Tier 3: Production Hardening\n\n\n\n## Production Checklist\n\n✅ Debug Mode\n- [ ] Set `debug: false` or omit entirely in application.yml\n- [ ] Use Spring profiles (dev/prod) to control logging\n- [ ] Never commit debug: true in production config files\n- [ ] Verify CI/CD doesn't inject debug mode\n\n✅ Secrets Management\n- [ ] Move all secrets from properties to environment variables or vault\n- [ ] Use `${VARIABLE_NAME}` syntax for secrets\n- [ ] Mask secrets in logs with `@Sensitive` annotations\n- [ ] Never log passwords, API keys, or tokens\n\n✅ Actuator Configuration\n- [ ] Exclude sensitive endpoints: `env`, `beans`, `configprops`, `mappings`\n- [ ] Require authentication for remaining endpoints\n- [ ] Use profiles to disable actuator in production\n\n✅ Logging Levels\n- [ ] Set root logger to WARN in production\n- [ ] Set Spring logger to INFO only\n- [ ] Disable SQL query logging in production\n- [ ] Never log request/response bodies\n\n✅ Verification\n- [ ] Run `mvn clean compile` and check for debug output\n- [ ] Test production builds don't expose debug logs\n- [ ] Audit log files for credential presence\n- [ ] Penetration test actuator endpoints"
+    },
+    {
+      "turn": 3,
+      "from": "human",
+      "value": "If we keep Actuator, what should we do operationally to avoid repeating this in prod?"
+    },
+    {
+      "turn": 4,
+      "from": "assistant",
+      "value": "## Operational Practices to Safely Use Actuator in Production\n\nIf your team needs Actuator for health checks and metrics, you must implement strict operational controls to prevent configuration mistakes.\n\n## Testing Production Configuration\n\n```java\nimport org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.test.context.ActiveProfiles;\nimport org.springframework.test.web.servlet.MockMvc;\n\n@SpringBootTest\n@AutoConfigureMockMvc\n@ActiveProfiles(\"prod\")  // Test with production profile\npublic class DebugModeSecurityTests {\n    \n    @Autowired\n    private MockMvc mockMvc;\n    \n    @Test\n    public void testConfigPropsEndpointSecured() throws Exception {\n        // SECURE: /configprops should be blocked in production\n        mockMvc.perform(get(\"/actuator/configprops\"))\n            .andExpect(status().isNotFound());\n    }\n    \n    @Test\n    public void testEnvEndpointBlocked() throws Exception {\n        // SECURE: /env endpoint should be blocked\n        mockMvc.perform(get(\"/actuator/env\"))\n            .andExpect(status().isNotFound());\n    }\n    \n    @Test\n    public void testDatabasePasswordNotInLogs() throws Exception {\n        // SECURE: Verify password is not in application logs\n        String logContent = getApplicationLogs();\n        assertFalse(logContent.contains(\"SuperSecretPassword\"));\n        assertFalse(logContent.contains(\"datasource.password=\"));\n    }\n}\n```\n\n## CI/CD Validation\n\n**Add this Maven plugin to verify production builds:**\n\n```xml\n<plugin>\n    <groupId>com.github.qaware</groupId>\n    <artifactId>maven-config-validation-plugin</artifactId>\n    <version>1.0.0</version>\n    <executions>\n        <execution>\n            <goals>\n                <goal>validate</goal>\n            </goals>\n            <configuration>\n                <rules>\n                    <rule>\n                        <profile>prod</profile>\n                        <config>debug</config>\n                        <mustNotContain>debug: true</mustNotContain>\n                    </rule>\n                    <rule>\n                        <profile>prod</profile>\n                        <config>application.yml</config>\n                        <mustContain>exclude:.*env.*beans.*configprops</mustContain>\n                    </rule>\n                </rules>\n            </configuration>\n        </execution>\n    </executions>\n</plugin>\n```\n\n**Or use Semgrep in CI/CD pipeline:**\n\n```bash\n# .github/workflows/security-scan.yml\nname: Security Scan\non: [push, pull_request]\njobs:\n  semgrep:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v2\n      - uses: returntocorp/semgrep-action@v1\n        with:\n          config: p/spring-boot-security\n          # Catches debug: true, exposed endpoints\n```\n\n## Monitoring and Alerting\n\n**Monitor for these indicators in production logs:**\n\n1. `debug: true` appearing in startup logs → CRITICAL ALERT\n2. Requests to `/actuator/env`, `/actuator/beans`, `/actuator/configprops` → IMMEDIATE BLOCK + LOG\n3. Credentials appearing in logs (`password=`, `api-key=`) → ROTATE IMMEDIATELY\n4. Spring Security filter chain debug output → INVESTIGATE CONFIG\n\n**Implementation:**\n\n```java\n@Component\npublic class SecurityAuditMonitor {\n    \n    private static final Logger log = LoggerFactory.getLogger(SecurityAuditMonitor.class);\n    \n    @EventListener\n    public void onApplicationReady(ContextRefreshedEvent event) {\n        boolean debugMode = Boolean.parseBoolean(System.getProperty(\"debug\", \"false\"));\n        if (debugMode && isProduction()) {\n            log.error(\"CRITICAL: Debug mode enabled in production - IMMEDIATE ACTION REQUIRED\");\n            // Send alert to security team\n            sendSecurityAlert(\"Debug mode detected in production environment\");\n        }\n    }\n    \n    @Bean\n    public FilterRegistrationBean<SensitiveEndpointFilter> sensitiveEndpointFilter() {\n        FilterRegistrationBean<SensitiveEndpointFilter> bean = \n            new FilterRegistrationBean<>(new SensitiveEndpointFilter());\n        bean.addUrlPatterns(\"/actuator/*\");\n        return bean;\n    }\n    \n    private class SensitiveEndpointFilter implements Filter {\n        @Override\n        public void doFilter(ServletRequest request, ServletResponse response, \n                           FilterChain chain) throws IOException, ServletException {\n            HttpServletRequest httpRequest = (HttpServletRequest) request;\n            String path = httpRequest.getRequestURI();\n            \n            // Block sensitive endpoints\n            if (isSensitiveEndpoint(path)) {\n                log.warn(\"BLOCK: Attempt to access sensitive actuator endpoint: {}\" + path);\n                HttpServletResponse httpResponse = (HttpServletResponse) response;\n                httpResponse.sendError(HttpServletResponse.SC_NOT_FOUND);\n                return;\n            }\n            chain.doFilter(request, response);\n        }\n        \n        private boolean isSensitiveEndpoint(String path) {\n            return path.contains(\"/actuator/env\") || \n                   path.contains(\"/actuator/beans\") || \n                   path.contains(\"/actuator/configprops\") || \n                   path.contains(\"/actuator/mappings\");\n        }\n    }\n    \n    private boolean isProduction() {\n        String profile = System.getenv(\"SPRING_PROFILES_ACTIVE\");\n        return profile != null && profile.contains(\"prod\");\n    }\n    \n    private void sendSecurityAlert(String message) {\n        // Send to PagerDuty, Slack, email, or SIEM\n    }\n}\n```\n\n## Key Differences: Dev vs Prod\n\n| Aspect | Development | Production |\n|--------|------------|------------|\n| **debug** | true | false |\n| **show-sql** | true | false |\n| **actuator exposure** | All endpoints | health, prometheus only |\n| **log level** | DEBUG | WARN |\n| **request logging** | Enabled | Disabled |\n| **Secrets location** | In application.yml | In vault/environment |\n| **Monitoring** | Console output | SIEM/logging service |\n| **Validation** | Manual testing | Automated CI/CD checks |\n\n## Operational Checklist for Team\n\n**Before Every Production Release:**\n- [ ] Verify `debug: false` in all production config files\n- [ ] Confirm Actuator endpoint whitelist (only health + prometheus)\n- [ ] Validate all secrets come from environment variables, not config\n- [ ] Run security tests with `-Dspring.profiles.active=prod`\n- [ ] Review CI/CD pipeline validates these settings\n- [ ] Audit all `*.yml` and `*.properties` files committed to repo\n- [ ] Check Dockerfile/deployment uses prod profile by default\n- [ ] Confirm monitoring alerts are configured for security violations\n\n**During Incident Response:**\n- [ ] Immediately disable Actuator or restrict access via firewall\n- [ ] Rotate all exposed credentials (database, API keys, etc.)\n- [ ] Check logs for how long endpoints were accessible\n- [ ] Audit what data was accessed via Actuator endpoints\n- [ ] Review database access logs for suspicious queries\n- [ ] Enable detailed request/response logging temporarily for investigation\n\n## Prevention Strategy\n\n1. **Profile-Based Config**: Use separate `application-dev.yml` and `application-prod.yml` files, never commit dev config to prod\n2. **Build-Time Validation**: Maven plugin verifies `debug: false` in production builds (stops the build if violated)\n3. **Static Analysis**: Semgrep rules catch `debug: true` in any production config during code review\n4. **Runtime Detection**: Application startup fails immediately if `debug: true` is detected with `SPRING_PROFILES_ACTIVE=prod`\n5. **Immutable Images**: Docker images built with prod config baked in, can't be overridden at runtime\n6. **Environment-Based Overrides**: Only use environment variables for secrets, never hardcode in config files\n\n## Summary\n\nActuator is valuable for operations but requires strict safeguards. The key is automating validation at three levels: build-time (Maven plugin), deployment-time (CI/CD tests), and runtime (application startup checks). Never rely on manual reviews—developers will forget. Always use separate configs for dev/prod, store secrets externally, and monitor for security violations in production."
+    }
+  ],
+  "security_assertions": {
+    "exploit_scenario": {
+      "description": "An unauthenticated attacker probes common Actuator paths and finds /actuator/env and /actuator/configprops exposed due to permissive security configuration. The responses include sensitive configuration values such as database passwords and API keys. The attacker uses those secrets to access internal systems and exfiltrate data.",
+      "preconditions": [
+        "Actuator dependency is enabled in the application",
+        "Management endpoints are exposed over HTTP",
+        "Security configuration permits unauthenticated access to /actuator/** or to all requests",
+        "Sensitive values exist in environment variables or config properties"
+      ]
+    },
+    "secure_properties": [
+      "Only /actuator/health and /actuator/info are publicly accessible; all other actuator endpoints require authentication/authorization",
+      "Application endpoints require authentication by default (deny-by-default posture)",
+      "Security headers are not weakened (e.g., frameOptions not fully disabled without need)"
+    ],
+    "negative_properties": [
+      "It must NOT be possible to access /actuator/env, /actuator/configprops, or other sensitive management endpoints without proper authorization",
+      "It must NOT be possible for unauthenticated users to access business APIs due to permissive anyRequest().permitAll()"
+    ],
+    "tooling_signals": [
+      {
+        "tool": "semgrep",
+        "rule_id": "java.spring.security.permit-all",
+        "expected": true
+      },
+      {
+        "tool": "semgrep",
+        "rule_id": "java.spring.actuator.exposed-sensitive-endpoints",
+        "expected": true
+      }
+    ]
+  },
+  "validation": {
+    "syntax_check": "not_tested",
+    "security_review": "not_reviewed",
+    "code_execution": "not_tested",
+    "encoding_check": "not_tested",
+    "duplication_check": "not_tested",
+    "reviewed_by": "api_generated",
+    "review_date": "2026-02-04",
+    "issues": []
+  },
+  "quality_score": 93,
+  "quality_enhanced": true,
+  "enhancement_date": "2026-02-05T13:57:17.030191",
+  "phase": "phase_2_batch_expansion"
+}

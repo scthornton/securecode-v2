@@ -1,40 +1,31 @@
-@dataset{securecode_v2_2025,
+@dataset{owasp_cve_dialogues_2025,
+  title        = {OWASP-CVE-Dialogues: A Production-Grade Secure Coding Dataset for AI Model Training},
   author       = {Thornton, Scott},
-  title        = {SecureCode v2: Production-Grade Security Vulnerability Training Dataset},
   year         = {2025},
   month        = {12},
-  publisher    = {HuggingFace},
-  url          = {https://huggingface.co/datasets/perfecXion/securecode-v2},
-  note         = {2,418 examples covering 14+ vulnerability types including Authentication, Authorization, SQL Injection, XSS, SSRF, Cryptography, and AI/ML Security across 6 programming languages. 100\% language fidelity and SIEM coverage.},
-  keywords     = {security, vulnerability detection, OWASP, SIEM, secure coding, machine learning, AI security, dataset},
+  url          = {https://github.com/scthornton/OWASP-CVE-Dialogues},
+  doi          = {10.5281/zenodo.XXXXXXX},
+  note         = {1,209 examples across 11 OWASP Top 10 2021 categories and 10 programming languages. 100\% CONTRIBUTING.md compliant.},
+  keywords     = {secure coding, vulnerability detection, OWASP Top 10, machine learning, dataset, security training},
   language     = {en},
   version      = {2.0}
 }
 
-@misc{securecode_v2_huggingface_2025,
-  title        = {perfecXion/securecode-v2},
+@misc{owasp_cve_dialogues_huggingface_2025,
+  title        = {scthornton/OWASP-CVE-Dialogues},
   author       = {Thornton, Scott},
   year         = {2025},
   publisher    = {Hugging Face},
-  howpublished = {\url{https://huggingface.co/datasets/perfecXion/securecode-v2}},
+  howpublished = {\url{https://huggingface.co/datasets/scthornton/OWASP-CVE-Dialogues}},
   note         = {HuggingFace Datasets repository}
 }
 
-@misc{securecode_v2_github_2025,
-  title        = {perfecXion/securecode-v2},
+@article{owasp_cve_dialogues_technical_report_2025,
+  title        = {OWASP-CVE-Dialogues: Design and Implementation of a Production-Grade Secure Coding Dataset},
   author       = {Thornton, Scott},
-  year         = {2025},
-  publisher    = {GitHub},
-  howpublished = {\url{https://github.com/perfecXion/securecode-v2}},
-  note         = {GitHub repository}
-}
-
-@article{securecode_v2_technical_report_2025,
-  title        = {SecureCode v2: Design and Implementation of a Production-Grade Security Vulnerability Training Dataset},
-  author       = {Thornton, Scott},
-  journal      = {Technical Report},
+  journal      = {arXiv preprint},
   year         = {2025},
   month        = {12},
-  url          = {https://github.com/perfecXion/securecode-v2},
-  abstract     = {We present SecureCode v2, a production-grade dataset designed for training large language models on security vulnerability detection and secure coding practices. The dataset contains 2,418 comprehensive examples covering 14+ vulnerability types including Authentication, Authorization, SQL Injection, XSS, SSRF, Command Injection, Cryptography, and AI/ML Security across 6 programming languages (JavaScript, Python, PHP, Java, Go, Ruby). Each example includes real-world breach scenarios with financial impact, vulnerable and secure code patterns, exploitation scenarios, comprehensive testing suites, SIEM detection rules (Splunk SPL + Elasticsearch Query DSL), and infrastructure hardening guides. The dataset achieves 100\% language fidelity, 100\% SIEM coverage, and 62.1\% CVE uniqueness, making it suitable for both ML model training and developer education.}
+  url          = {https://github.com/scthornton/OWASP-CVE-Dialogues},
+  abstract     = {We present OWASP-CVE-Dialogues, an enterprise-grade dataset designed for training large language models on secure coding practices. The dataset contains 1,209 real-world grounded examples across 11 OWASP Top 10 2021 categories and 10 programming languages, achieving 100\% compliance with strict quality standards. Each example follows a standardized 4-turn conversation structure providing both vulnerable and secure implementations, attack examples, and defense-in-depth strategies. We describe the dataset creation methodology, quality assurance process, and provide empirical analysis of coverage across security categories, programming languages, and severity levels.}
 }

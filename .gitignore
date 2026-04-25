@@ -74,11 +74,14 @@ site/
 *.tar.gz
 *.7z
 backup/
+backups/
 old/
 
-# Large data files (if not tracked by git-lfs)
-*.parquet
-*.arrow
+# Enrichment script cache (local re-fetchable, not for version control)
+scripts/cache/
+
+# Large data files are tracked by git-lfs
+# Parquet files are the primary dataset format
 
 # Node modules (if any JS tooling)
 node_modules/
@@ -90,14 +93,3 @@ node_modules/
 !automation/logs/.gitkeep
 !docs/archive/.gitkeep
 !docs/reports/.gitkeep
-
-# AI tool artifacts
-.claude/
-CLAUDE.md
-claude.md
-planning.md
-status.md
-notes.md
-todo.md
-*.chat
-*.conversation
