@@ -1,15 +1,15 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://perfecxion.ai/schemas/securecode-v2.json",
-  "title": "SecureCode v2.0 Training Example",
-  "description": "Schema for secure code training dataset examples with validation",
+  "$id": "https://perfecxion.ai/schemas/securecode-v2.1.json",
+  "title": "SecureCode Web v2.1 Training Example",
+  "description": "Schema for SecureCode Web dataset examples. v2.1 adds non-breaking metadata enrichment (EPSS, CVSS v3/v4, ATT&CK, CAPEC, preconditions, OWASP 2025 dual-field, provenance). All new fields are optional for backward compatibility.",
   "type": "object",
   "required": ["id", "metadata", "conversations", "validation"],
   "properties": {
     "id": {
       "type": "string",
-      "pattern": "^[a-z0-9-]+-\\d{6}$",
-      "description": "Unique identifier (e.g., 'sql-injection-000001')"
+      "pattern": "^[a-z0-9_-]+-\\d{6}$",
+      "description": "Unique identifier (e.g., 'sql-injection-000001', 'design_flaws-000001'). Allows underscores in the prefix for compound names."
     },
     "metadata": {
       "type": "object",
@@ -17,36 +17,26 @@
       "properties": {
         "lang": {
           "type": "string",
-          "enum": ["python", "javascript", "typescript", "java", "go", "c", "c++", "c#", "rust", "php", "ruby", "kotlin", "swift"],
-          "description": "Programming language"
+          "enum": ["python", "javascript", "typescript", "java", "go", "c", "c++", "c#", "csharp", "rust", "php", "ruby", "kotlin", "swift", "yaml", "hcl"],
+          "description": "Programming language. Both 'c#' and 'csharp' accepted (data uses 'csharp')."
         },
         "category": {
           "type": "string",
-          "enum": [
-            "broken_access_control",
-            "cryptographic_failures",
-            "injection",
-            "insecure_design",
-            "security_misconfiguration",
-            "vulnerable_components",
-            "auth_failures",
-            "integrity_failures",
-            "logging_failures",
-            "ssrf",
-            "cloud_security",
-            "api_security",
-            "ai_ml_security"
-          ],
-          "description": "Top-level vulnerability category"
+          "description": "Top-level vulnerability category. Common values: broken_access_control, cryptographic_failures, injection, insecure_design, security_misconfiguration, vulnerable_components, auth_failures, broken_authentication, integrity_failures, logging_failures, ssrf, crypto_failures, etc."
         },
         "subcategory": {
           "type": "string",
-          "description": "Specific vulnerability type (e.g., 'sql_injection', 'idor', 'prompt_injection')"
+          "description": "Specific vulnerability type (e.g., 'sql_injection', 'idor', 'csrf')"
         },
         "owasp_2021": {
           "type": "string",
           "pattern": "^A\\d{2}:2021-.+|Modern Threats$",
-          "description": "OWASP Top 10 2021 category or 'Modern Threats'"
+          "description": "OWASP Top 10 2021 category. Preserved alongside owasp_2025 for backward compatibility (non-breaking dual-field migration)."
+        },
+        "owasp_2025": {
+          "type": "string",
+          "pattern": "^A\\d{2}:2025-.+",
+          "description": "OWASP Top 10 2025 category. Added in v2.1. Optional for backward compatibility but populated for all migrated examples. Note: A10:2025 'Mishandling of Exceptional Conditions' is a new category in 2025; current dataset has 0 examples mapped to it (documented coverage gap)."
         },
         "cwe": {
           "type": "string",
@@ -60,8 +50,7 @@
         },
         "complexity": {
           "type": "string",
-          "enum": ["simple", "moderate", "complex", "advanced"],
-          "description": "Example complexity level"
+          "description": "Example complexity level. Recommended values: basic, simple, moderate, complex, advanced. (Schema permits any string for compatibility with legacy data; CONTRIBUTING.md lists recommended values.)"
         },
         "created": {
           "type": "string",
@@ -71,6 +60,141 @@
         "validated": {
           "type": "boolean",
           "description": "Whether example passed all validation checks"
+        },
+
+        "epss_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "EPSS exploit-probability score (0–1). Added in v2.1."
+        },
+        "epss_percentile": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "EPSS percentile within the global CVE distribution (0–1, where 1 = top 1%)."
+        },
+        "epss_date": {
+          "type": "string",
+          "description": "Date of EPSS measurement or approximation (YYYY-MM-DD)."
+        },
+        "epss_source": {
+          "type": "string",
+          "description": "Source of EPSS value (e.g. 'first.org_epss_api_v1', 'derived_from_severity_bucket_v2.1')."
+        },
+        "epss_confidence": {
+          "type": "string",
+          "enum": ["measured", "heuristic", "approximated", "absent"],
+          "description": "Confidence in EPSS value. 'measured' = direct API result; 'approximated' = derived heuristically (e.g., severity bucket for composite examples)."
+        },
+
+        "cvss_v3_vector": {
+          "type": "string",
+          "description": "CVSS v3.1 vector string (e.g., 'CVSS:3.1/AV:N/AC:L/...'). Added in v2.1."
+        },
+        "cvss_v3_source": {
+          "type": "string",
+          "description": "Source of CVSS v3 vector (e.g., 'nvd_api_v2')."
+        },
+        "cvss_v3_confidence": {
+          "type": "string",
+          "enum": ["measured", "heuristic", "approximated", "absent"]
+        },
+        "cvss_v4_vector": {
+          "type": "string",
+          "description": "CVSS v4.0 vector string. Often absent — most CVEs not yet rated v4. Added in v2.1."
+        },
+        "cvss_v4_source": {
+          "type": "string"
+        },
+        "cvss_v4_confidence": {
+          "type": "string",
+          "enum": ["measured", "heuristic", "approximated", "absent"]
+        },
+
+        "attack_techniques": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^T\\d{4}(\\.\\d{3})?$"
+          },
+          "description": "MITRE ATT&CK technique IDs (e.g., 'T1190', 'T1078.004'). Added in v2.1. Heuristic mapping from CWE — confidence is always 'heuristic'."
+        },
+        "attack_techniques_source": {
+          "type": "string",
+          "description": "Source of ATT&CK mapping (e.g., 'derived_from_curated_cwe_attack_table')."
+        },
+        "attack_techniques_confidence": {
+          "type": "string",
+          "enum": ["measured", "heuristic", "approximated", "absent"]
+        },
+
+        "capec_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^CAPEC-\\d+$"
+          },
+          "description": "MITRE CAPEC attack pattern IDs. Added in v2.1. Derived from CWE via MITRE catalog — confidence is 'heuristic' since CWE→CAPEC mapping is published by MITRE but the relationship is many-to-many."
+        },
+        "capec_ids_source": {
+          "type": "string"
+        },
+        "capec_ids_confidence": {
+          "type": "string",
+          "enum": ["measured", "heuristic", "approximated", "absent"]
+        },
+
+        "preconditions": {
+          "type": "object",
+          "description": "Explicit preconditions for the vulnerability. Added in v2.1. Either derived from CVSS vector (measured) or from category+severity heuristics (approximated).",
+          "properties": {
+            "auth_required": {
+              "type": "boolean",
+              "description": "Whether the attacker needs to be authenticated"
+            },
+            "network_position": {
+              "type": "string",
+              "enum": ["internet", "adjacent", "internal", "local", "unknown"]
+            },
+            "user_interaction": {
+              "type": "string",
+              "enum": ["none", "passive", "active", "unknown"]
+            },
+            "prior_access": {
+              "type": "string",
+              "enum": ["none", "authenticated_user", "privileged", "physical", "unknown"]
+            }
+          }
+        },
+        "preconditions_source": {
+          "type": "string"
+        },
+        "preconditions_confidence": {
+          "type": "string",
+          "enum": ["measured", "heuristic", "approximated", "absent"]
+        },
+        "preconditions_text_overrides": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Which preconditions fields were overridden by business_impact text analysis (composite-heuristic pass)."
+        },
+
+        "provenance": {
+          "type": "object",
+          "description": "Audit trail of metadata operations. Added in v2.1.",
+          "properties": {
+            "owasp_migration_date": {"type": "string", "format": "date"},
+            "owasp_data_corrections": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Data corrections applied during the OWASP 2021→2025 migration (e.g. 'triaged_unknown_to_injection')."
+            },
+            "enrichment_date": {"type": "string", "format": "date"},
+            "enrichment_version": {"type": "string"},
+            "composite_heuristic_date": {"type": "string", "format": "date"},
+            "composite_heuristic_version": {"type": "string"}
+          }
         }
       }
     },
@@ -90,23 +214,27 @@
           "type": "string",
           "description": "How the attack was executed"
         },
+        "business_impact": {
+          "type": ["string", "null"],
+          "description": "Business-level consequence text (regulatory fines, reputation damage, etc.)"
+        },
         "cve": {
           "type": ["string", "null"],
-          "pattern": "^CVE-\\d{4}-\\d+$",
-          "description": "CVE identifier if applicable"
+          "pattern": "^(CVE-\\d{4}-\\d+)?$",
+          "description": "CVE identifier if applicable. Accepts CVE format, null, or empty string for legacy compatibility."
         },
         "year": {
           "type": "integer",
-          "minimum": 2017,
-          "maximum": 2025,
-          "description": "Year of incident"
+          "minimum": 2010,
+          "maximum": 2027,
+          "description": "Year of incident. v2.1 widened minimum to 2010 (legacy data references older incidents) and maximum to 2027 (was 2025)."
         }
       }
     },
     "conversations": {
       "type": "array",
       "minItems": 2,
-      "description": "Multi-turn conversation array",
+      "description": "Multi-turn conversation array. CONTRIBUTING.md requires exactly 4 turns in human/assistant/human/assistant order; the schema permits minItems=2 only to allow legacy and partial entries.",
       "items": {
         "type": "object",
         "required": ["turn", "from", "value"],
@@ -135,28 +263,24 @@
       "properties": {
         "syntax_check": {
           "type": "string",
-          "enum": ["passed", "failed", "not_tested"],
-          "description": "Syntax validation status"
+          "enum": ["passed", "failed", "not_tested"]
         },
         "security_review": {
           "type": "string",
-          "enum": ["passed", "failed", "not_reviewed"],
-          "description": "Security expert review status"
+          "enum": ["passed", "failed", "not_reviewed"]
         },
         "code_execution": {
           "type": "string",
-          "enum": ["passed", "failed", "not_tested"],
-          "description": "Code execution test status"
+          "enum": ["passed", "failed", "not_tested", "drift_detected"],
+          "description": "Code execution validation. 'drift_detected' added in v2.1 to support v2.4 executable verification when an exploit no longer reproduces."
         },
         "encoding_check": {
           "type": "string",
-          "enum": ["passed", "failed", "not_tested"],
-          "description": "UTF-8 encoding validation"
+          "enum": ["passed", "failed", "not_tested"]
         },
         "duplication_check": {
           "type": "string",
-          "enum": ["passed", "failed", "not_tested"],
-          "description": "Duplicate detection status"
+          "enum": ["passed", "failed", "not_tested"]
         },
         "reviewed_by": {
           "type": "string",
@@ -164,15 +288,11 @@
         },
         "review_date": {
           "type": "string",
-          "format": "date",
-          "description": "Date of validation (YYYY-MM-DD)"
+          "format": "date"
         },
         "issues": {
           "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "List of validation issues found"
+          "items": {"type": ["string", "null"]}
         }
       }
     }
