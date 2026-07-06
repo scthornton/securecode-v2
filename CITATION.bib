@@ -1,31 +1,17 @@
-@dataset{owasp_cve_dialogues_2025,
-  title        = {OWASP-CVE-Dialogues: A Production-Grade Secure Coding Dataset for AI Model Training},
+@article{thornton2025securecode,
+  title        = {SecureCode: A Production-Grade Multi-Turn Dataset for Training Security-Aware Code Generation Models},
   author       = {Thornton, Scott},
+  journal      = {arXiv preprint arXiv:2512.18542},
   year         = {2025},
-  month        = {12},
-  url          = {https://github.com/scthornton/OWASP-CVE-Dialogues},
-  doi          = {10.5281/zenodo.XXXXXXX},
-  note         = {1,209 examples across 11 OWASP Top 10 2021 categories and 10 programming languages. 100\% CONTRIBUTING.md compliant.},
-  keywords     = {secure coding, vulnerability detection, OWASP Top 10, machine learning, dataset, security training},
-  language     = {en},
-  version      = {2.0}
+  url          = {https://arxiv.org/abs/2512.18542}
 }
 
-@misc{owasp_cve_dialogues_huggingface_2025,
-  title        = {scthornton/OWASP-CVE-Dialogues},
+@misc{thornton2025securecodeweb,
+  title        = {SecureCode Web: Traditional Web and Application Security Dataset},
   author       = {Thornton, Scott},
   year         = {2025},
   publisher    = {Hugging Face},
-  howpublished = {\url{https://huggingface.co/datasets/scthornton/OWASP-CVE-Dialogues}},
-  note         = {HuggingFace Datasets repository}
-}
-
-@article{owasp_cve_dialogues_technical_report_2025,
-  title        = {OWASP-CVE-Dialogues: Design and Implementation of a Production-Grade Secure Coding Dataset},
-  author       = {Thornton, Scott},
-  journal      = {arXiv preprint},
-  year         = {2025},
-  month        = {12},
-  url          = {https://github.com/scthornton/OWASP-CVE-Dialogues},
-  abstract     = {We present OWASP-CVE-Dialogues, an enterprise-grade dataset designed for training large language models on secure coding practices. The dataset contains 1,209 real-world grounded examples across 11 OWASP Top 10 2021 categories and 10 programming languages, achieving 100\% compliance with strict quality standards. Each example follows a standardized 4-turn conversation structure providing both vulnerable and secure implementations, attack examples, and defense-in-depth strategies. We describe the dataset creation methodology, quality assurance process, and provide empirical analysis of coverage across security categories, programming languages, and severity levels.}
+  version      = {2.1.0},
+  howpublished = {\url{https://huggingface.co/datasets/scthornton/securecode-web}},
+  note         = {1,378 web security examples (train/validation/test = 1,102/138/138) across 10 OWASP Top 10 2021 categories and 11 programming languages, dual-tagged to OWASP Top 10 2025. Every example is a 4-turn vulnerable-and-secure conversation.}
 }

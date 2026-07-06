@@ -1,6 +1,6 @@
 ---
 language:
-- code
+- en
 license: cc-by-nc-sa-4.0
 size_categories:
 - 1K<n<10K
@@ -171,11 +171,11 @@ dataset_info:
       dtype: string
   splits:
   - name: train
-    num_examples: 1102
+    num_examples: 1249
   - name: validation
-    num_examples: 138
+    num_examples: 186
   - name: test
-    num_examples: 138
+    num_examples: 190
 configs:
 - config_name: default
   data_files:
@@ -192,13 +192,13 @@ SecureCode Web: Traditional Web & Application Security Dataset
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.1.0-blueviolet.svg)
+![Version](https://img.shields.io/badge/version-2.6.1-blueviolet.svg)
 ![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-blue.svg)
-![Examples](https://img.shields.io/badge/examples-1,378-green.svg)
-![Languages](https://img.shields.io/badge/languages-12-orange.svg)
+![Examples](https://img.shields.io/badge/examples-1,625-green.svg)
+![Languages](https://img.shields.io/badge/languages-13-orange.svg)
 ![Quality](https://img.shields.io/badge/quality-100%25_validated-brightgreen.svg)
-![CVE Grounding](https://img.shields.io/badge/CVE_grounding-100%25-blue.svg)
-![EPSS](https://img.shields.io/badge/EPSS-97.7%25_coverage-blue.svg)
+![Incident Grounding](https://img.shields.io/badge/incident_grounding-100%25-blue.svg)
+![EPSS](https://img.shields.io/badge/EPSS-34%25_coverage-blue.svg)
 ![OWASP](https://img.shields.io/badge/OWASP-2021%20%7C%202025-orange.svg)
 
 **Production-grade web security vulnerability dataset with complete incident grounding, 4-turn conversational structure, and comprehensive operational guidance**
@@ -209,21 +209,107 @@ SecureCode Web: Traditional Web & Application Security Dataset
 
 ---
 
-## What's new in v2.1
+## What's new in v2.6
 
-v2.1 adds **deployment-grade exploitability metadata** to every example. Users can now filter by *what's actually exploitable in their environment*, not just by severity.
+v2.6 restores proper Express.js coverage for the topics whose examples were removed in v2.5.1 (they had
+shared one reused answer). **29 new, genuinely distinct Express.js examples** - IDOR, auth-middleware
+bypass, broken auth/session, SQL and NoSQL injection, prototype pollution, ReDoS, vulnerable dependency,
+JWT algorithm bypass, insecure CORS, and input validation - each with a correct, topic-matching fix
+(validated: 0 near-duplicates, 29/29 distinct answers, 0 JavaScript syntax errors, `cve` null). Totals
+move to 1,650 examples (1,272 / 187 / 191).
 
-| Field | Coverage | Source |
+## What's new in v2.5
+
+v2.5 adds **85 examples across three currency packs** that bring the dataset up to the 2025 threat and
+taxonomy landscape:
+
+- **Software supply chain / CI-CD (35):** the brand-new **OWASP Top 10:2025 A03 - Software Supply Chain
+  Failures**, previously uncovered. Dependency confusion, malicious/typosquatted packages, postinstall
+  scripts, SHA-pinning of GitHub Actions, `pull_request_target` hardening, CI secret exfiltration, and
+  integrity/SBOM verification - grounded in the real 2025 wave (npm chalk/debug, the Shai-Hulud worm,
+  and the `tj-actions/changed-files` compromise, CVE-2025-30066).
+- **OAuth 2.0 / OIDC (30):** implementation-level flaws per RFC 9700 - exact `redirect_uri` matching,
+  mandatory PKCE, `state`/`nonce`, full token validation (signature/`iss`/`aud`/`alg`), implicit-flow
+  migration, and secure token storage.
+- **2025 framework CVEs (20):** the Next.js middleware authorization bypass (CVE-2025-29927) and the
+  React Server Components deserialization RCE "React2Shell" (CVE-2025-55182 / CVE-2025-66478), taught
+  with defense-in-depth fixes, not just "upgrade".
+
+The CVE-citing examples reference **only verified real CVEs** (each confirmed against NVD/vendor advisories
+before release) - the inverse of the v2.2 problem, showing the dataset grounds on real CVEs correctly.
+Totals move to 1,658 examples (1,298 / 180 / 180); splits are leakage-aware.
+
+## What's new in v2.4
+
+v2.4 adds **125 examples across three coverage packs**, targeting the highest-frequency web gaps that
+prior versions barely covered:
+
+- **CSRF / open-redirect / clickjacking (45):** synchronizer-token CSRF (Flask-WTF, Django, Express,
+  Spring, Rails, Laravel, ASP.NET antiforgery), allowlist-based redirect validation, and
+  `frame-ancestors` / `X-Frame-Options` clickjacking defenses.
+- **File-upload / path-traversal (40):** magic-byte + allowlist upload validation, canonical-path
+  containment (`realpath` + `commonpath`, `filepath.Clean`, `GetFullPath` prefix checks), and zip-slip
+  in archive extraction.
+- **Django buildout (40):** ORM raw/`extra` SQLi, template `mark_safe`/`|safe` XSS, DRF mass assignment,
+  object-level authz (IDOR), SSRF, `DEBUG`/`SECRET_KEY`/`ALLOWED_HOSTS` misconfig, and `@csrf_exempt`
+  misuse - lifting Django from ~3 to ~43 examples.
+
+Every pack follows the v2.2/v2.3 rules: `context.cve` null (no fabricated CVEs), real-incident grounding,
+and each secure fix uses the correct defense at the sink (not input blacklisting). All examples passed a
+schema + Python-syntax check; splits are leakage-aware. Totals move to 1,573 examples (1,245 / 164 / 164).
+
+## What's new in v2.3
+
+v2.3 adds a **70-example XSS expansion pack**, roughly doubling cross-site-scripting coverage (the most
+under-represented high-frequency web vulnerability in prior versions) and broadening it well beyond
+JavaScript. The pack covers **stored, reflected, DOM, and attribute-context XSS plus one clickjacking
+example (CWE-1021)** across seven server-rendered stacks: Jinja2/Django (Python), JSP/Thymeleaf (Java),
+vanilla PHP/Twig/Blade, ERB/Rails (Ruby), `html/template` (Go), Razor (C#), and browser DOM (JS/TS).
+
+Every example follows the anti-fabrication rules learned from the v2.2 audit: **`context.cve` is null**
+(app-level XSS rarely maps to a CVE), grounding uses real incidents (British Airways/Magecart, Samy, etc.),
+and each secure fix uses **context-aware output encoding at the sink** (template auto-escaping,
+`htmlspecialchars` with `ENT_QUOTES`, `textContent`, DOMPurify, `html/template`, `c:out`, `@Html`
+encoding) rather than input blacklisting. Split membership is leakage-aware (no near-duplicate straddles
+train/test). Totals move to 1,448 examples (1,156 / 146 / 146).
+
+## What's new in v2.2
+
+v2.2 is a **grounding-integrity correction**. An independent audit of every `context.cve` and
+`context.real_world_incident` field found that a large share of the CVE and incident references were
+mismatched or fabricated (for example, a Metabase RCE CVE cited on an account-enumeration example).
+We corrected the grounding and, critically, **removed the EPSS/CVSS metadata that had been harvested
+from those wrong CVEs** - those scores described a different vulnerability and were misleading.
+
+- **802 mismatched/nonexistent CVEs removed** (`context.cve` set to null); 21 replaced with the correct CVE.
+- **EPSS and CVSS vectors nulled** wherever they were derived from a removed CVE (they were all
+  `measured` values keyed to that specific CVE, not heuristic estimates).
+- **810 real-world incidents corrected**: 378 rewritten to the accurate incident, 432 that had no
+  real counterpart replaced with an honest `Representative <category> example; not tied to a specific
+  public incident.` line.
+- CWE-derived enrichment (**CAPEC, ATT&CK, preconditions**) is unaffected - it never depended on the CVE.
+
+The net effect is a smaller but **honest** exploitability layer. Coverage below reflects the corrected data.
+
+| Field | Coverage (v2.2, corrected) | Source |
 |---|---|---|
-| **EPSS** (exploit-probability score + percentile) | 97.7% (1,346 / 1,378) | FIRST.org EPSS API + severity-bucket approximation for composite examples |
-| **CVSS v3.1 vector** | 77.4% (1,067 / 1,378) | NVD API |
-| **CVSS v4.0 vector** | 2.0% (28 / 1,378) | NVD API where published; most CVEs not yet rated v4 |
-| **Preconditions** (auth_required, network_position, user_interaction, prior_access) | 94.9% (1,308 / 1,378) | Parsed from CVSS or category-heuristic |
-| **MITRE CAPEC IDs** | 71.0% (979 / 1,378) | Derived from CWE via MITRE catalog |
-| **MITRE ATT&CK techniques** | 54.3% (748 / 1,378) | Heuristic mapping from CWE |
-| **OWASP Top 10:2025 dual-field** | 100% (1,378 / 1,378) | Migrated from 2021 with non-breaking dual fields |
+| **EPSS** (exploit-probability score + percentile) | 33.7% (547 / 1,625) | FIRST.org EPSS API, kept only where the CVE is verified |
+| **CVSS v3.1 vector** | 18.3% (297 / 1,625) | NVD API, kept only where the CVE is verified |
+| **CVSS v4.0 vector** | 0.2% (3 / 1,625) | NVD API where published |
+| **Preconditions** (auth_required, network_position, user_interaction, prior_access) | 81.0% (1,316 / 1,625) | Parsed from CVSS or category-heuristic (CWE-based) |
+| **MITRE CAPEC IDs** | 69.4% (1,128 / 1,625) | Derived from CWE via MITRE catalog |
+| **MITRE ATT&CK techniques** | 55.0% (893 / 1,625) | Heuristic mapping from CWE |
+| **OWASP Top 10:2025 dual-field** | 100% (1,625 / 1,625) | Migrated from 2021 with non-breaking dual fields |
+| **Real-world incident** | 100% populated (69% named incident, 31% marked representative) | Audited and corrected in v2.2 |
 
 Every derived field carries paired `*_source` and `*_confidence` markers so you can distinguish measured from heuristic-derived values. Confidence enum: `measured` | `heuristic` | `approximated` | `absent`.
+
+## What's new in v2.1
+
+v2.1 added **deployment-grade exploitability metadata** to every example (EPSS, CVSS, CAPEC, ATT&CK,
+preconditions) alongside the OWASP 2021->2025 dual-field migration. The v2.2 audit above corrected the
+CVE-derived parts of this layer; the coverage table under "What's new in v2.2" supersedes the original
+v2.1 figures.
 
 ### Non-breaking migration
 
@@ -233,11 +319,11 @@ v2.1 is fully backward compatible. The existing `metadata.owasp_2021` field is p
 
 While migrating, we fixed pre-existing issues in v2.0:
 
-- 60 SQL examples in `sql_batch_201.jsonl` had `owasp_2021: "Unknown"` and `cwe: "CWE-000"` — corrected to `A03:2021-Injection` and `CWE-89`
+- 60 SQL examples across `sql_batch_201/208/212/216/219/221.jsonl` (10 each) had `owasp_2021: "Unknown"` and `cwe: "CWE-000"`, corrected to `A03:2021-Injection` and `CWE-89`
 - 10 `express_js-injection-*` examples had truncated `owasp_2021: "A03"` — corrected to full label
 - 2 SSRF examples had inconsistent `(SSRF)` suffix — normalized
 - 6 SSTI examples had truncated conversations in JSONL (parquet had full content) — JSONL restored from parquet
-- 50 AI/ML examples in `data/` (not in any release split) moved to `data/_archived_duplicates/ai_ml_removed/` (they belong in `scthornton/securecode-aiml`)
+- 50 AI/ML examples in `data/` (not in any release split) moved to `data/_archived_duplicates/ai_ml_removed/` (out of scope for this web-security dataset; AI/ML security is covered separately by `scthornton/securecode-aiml`)
 - ~30 minor type/format normalizations for schema strictness
 
 All corrections are recorded in `metadata.provenance.owasp_data_corrections` per affected example.
@@ -274,7 +360,7 @@ This dataset is the **web & application security** component of the SecureCode f
 | Dataset | Examples | Focus | Link |
 |---------|----------|-------|------|
 | **SecureCode** | 2,185 | Unified dataset (web + AI/ML) with HF configs | [scthornton/securecode](https://huggingface.co/datasets/scthornton/securecode) |
-| **SecureCode Web** | 1,378 | Traditional web & application security (OWASP Top 10 2021) | This dataset |
+| **SecureCode Web** | 1,625 | Traditional web & application security (OWASP Top 10 2021) | This dataset |
 | **SecureCode AI/ML** | 750 | AI/ML system security (OWASP LLM Top 10 2025) | [scthornton/securecode-aiml](https://huggingface.co/datasets/scthornton/securecode-aiml) |
 
 For the combined dataset with both web and AI/ML security examples, use [`scthornton/securecode`](https://huggingface.co/datasets/scthornton/securecode).
@@ -283,9 +369,9 @@ For the combined dataset with both web and AI/ML security examples, use [`scthor
 
 ## Overview
 
-SecureCode Web is a rigorously validated dataset of **1,378 web security-focused coding examples** designed to train security-aware AI code generation models. Every example is grounded in real-world security incidents (CVEs, breach reports), provides both vulnerable and secure implementations, demonstrates concrete attacks, and includes defense-in-depth operational guidance.
+SecureCode Web is a rigorously validated dataset of **1,625 web security-focused coding examples** designed to train security-aware AI code generation models. Every example is grounded in real-world security incidents (CVEs, breach reports), provides both vulnerable and secure implementations, demonstrates concrete attacks, and includes defense-in-depth operational guidance.
 
-The dataset focuses exclusively on **traditional web and application security** (OWASP Top 10 2021) and includes the original **1,159 baseline examples** covering 11 programming languages, plus **219 framework-specific additions** targeting 9 popular web frameworks with deep, idiomatic security patterns.
+The dataset focuses exclusively on **traditional web and application security** (OWASP Top 10 2021) and includes the original **1,159 baseline examples** covering 11 programming languages, plus **219 framework-specific additions**, a **70-example XSS expansion pack**, **125 v2.4 coverage examples** (CSRF/open-redirect/clickjacking, file-upload/path-traversal, Django), and **85 v2.5 currency examples** (supply-chain/CI-CD, OAuth/OIDC, 2025 framework CVEs).
 
 ### Why SecureCode Web?
 
@@ -322,7 +408,7 @@ We've fine-tuned **8 security-aware code models** (3B to 20B parameters) using t
 - ~1-2 hours training time per model
 - Total training cost: ~$400 for all 8 models
 
-**Note:** Models were trained on the v2.0 baseline (1,216 examples). Retraining with the full 1,435 examples is planned for a future release.
+**Note:** The published models were trained on the earlier v2.0 baseline. A retrain on the current corpus is planned for a future release.
 
 **Read More:** [SecureCode Models: Training Security-Aware Code Generation](https://huggingface.co/blog/scthornton/securecode-models)
 
@@ -332,63 +418,69 @@ We've fine-tuned **8 security-aware code models** (3B to 20B parameters) using t
 
 | Metric | Value |
 |--------|-------|
-| **Total Examples** | 1,378 |
-| **Baseline (v2.0)** | 1,159 examples (12 languages, OWASP Top 10 2021) |
+| **Total Examples** | 1,625 |
+| **Baseline (v2.0)** | 1,159 examples (11 languages, OWASP Top 10 2021) |
 | **Framework Additions** | 219 examples (9 frameworks, framework-native security) |
+| **XSS expansion pack (v2.3)** | 70 examples (server-rendered XSS across 7 languages) |
+| **Coverage packs (v2.4)** | 125 examples (CSRF/redirect/clickjacking, file-upload/traversal, Django) |
+| **Currency packs (v2.5)** | 85 examples (supply-chain/CI-CD, OAuth/OIDC, 2025 framework CVEs) |
 | **Vulnerability Categories** | 10 (complete OWASP Top 10:2021) |
-| **Programming Languages** | 12 |
+| **Programming Languages** | 13 (incl. YAML/Dockerfile/JSON config) |
 | **Average Conversation Length** | 4 turns (user - assistant - user - assistant) |
 
 ### Vulnerability Coverage
 
-Distribution across both OWASP taxonomies. Counts computed from the released parquet (post-v2.1 corrections).
+Distribution across both OWASP taxonomies. Counts computed from the released parquet (1,625 examples).
 
 | OWASP 2021 | OWASP 2025 (mapped) | Examples |
 |---|---|---|
-| A01:2021 — Broken Access Control | A01:2025 — Broken Access Control | 211 |
-| A02:2021 — Cryptographic Failures | A04:2025 — Cryptographic Failures | 179 |
-| A03:2021 — Injection | A05:2025 — Injection | 218 |
-| A04:2021 — Insecure Design | A06:2025 — Insecure Design | 108 |
-| A05:2021 — Security Misconfiguration | A02:2025 — Security Misconfiguration | 151 |
-| A06:2021 — Vulnerable and Outdated Components | A03:2025 — Software Supply Chain Failures | 100 |
-| A07:2021 — Identification and Authentication Failures | A07:2025 — Authentication Failures | 207 |
-| A08:2021 — Software and Data Integrity Failures | A08:2025 — Software or Data Integrity Failures | 87 |
+| A01:2021 — Broken Access Control | A01:2025 — Broken Access Control | 303 |
+| A02:2021 — Cryptographic Failures | A04:2025 — Cryptographic Failures | 135 |
+| A03:2021 — Injection | A05:2025 — Injection | 303 |
+| A04:2021 — Insecure Design | A06:2025 — Insecure Design | 138 |
+| A05:2021 — Security Misconfiguration | A02:2025 — Security Misconfiguration | 158 |
+| A06:2021 — Vulnerable and Outdated Components | A03:2025 — Software Supply Chain Failures | 137 |
+| A07:2021 — Identification and Authentication Failures | A07:2025 — Authentication Failures | 234 |
+| A08:2021 — Software and Data Integrity Failures | A08:2025 — Software or Data Integrity Failures | 99 |
 | A09:2021 — Security Logging and Monitoring Failures | A09:2025 — Security Logging and Alerting Failures | 66 |
-| A10:2021 — Server-Side Request Forgery | (folded into A01:2025) | 51 |
+| A10:2021 — Server-Side Request Forgery | (folded into A01:2025) | 52 |
 | (none) | A10:2025 — Mishandling of Exceptional Conditions | 0 *(documented gap)* |
-| **Total** | | **1,378** |
+| **Total** | | **1,625** |
 
 Aggregated by OWASP 2025 (after SSRF folds into Broken Access Control):
 
 | OWASP 2025 Category | Examples |
 |---|---|
-| A01:2025 — Broken Access Control | 262 (211 + 51 SSRF) |
-| A05:2025 — Injection | 218 |
-| A07:2025 — Authentication Failures | 207 |
-| A04:2025 — Cryptographic Failures | 179 |
-| A02:2025 — Security Misconfiguration | 151 |
-| A06:2025 — Insecure Design | 108 |
-| A03:2025 — Software Supply Chain Failures | 100 |
-| A08:2025 — Software or Data Integrity Failures | 87 |
+| A01:2025 — Broken Access Control | 355 (303 + 52 SSRF) |
+| A05:2025 — Injection | 303 |
+| A07:2025 — Authentication Failures | 234 |
+| A04:2025 — Cryptographic Failures | 135 |
+| A02:2025 — Security Misconfiguration | 158 |
+| A06:2025 — Insecure Design | 138 |
+| A03:2025 — Software Supply Chain Failures | 137 |
+| A08:2025 — Software or Data Integrity Failures | 99 |
 | A09:2025 — Security Logging and Alerting Failures | 66 |
 | A10:2025 — Mishandling of Exceptional Conditions | 0 |
 
 ### Programming Language Distribution
 
+Counts computed from the released parquet (1,625 examples).
+
 | Language | Examples | Frameworks/Tools |
 |----------|----------|------------------|
-| **Python** | 255+ | Django, Flask, FastAPI |
-| **JavaScript** | 245+ | Express.js, NestJS, React, Vue |
-| **Java** | 189+ | Spring Boot |
-| **Go** | 159+ | Gin framework |
-| **PHP** | 123+ | Laravel, Symfony |
-| **TypeScript** | 89+ | NestJS, Angular |
-| **C#** | 78+ | ASP.NET Core |
-| **Ruby** | 56+ | Ruby on Rails |
-| **Rust** | 12+ | Actix, Rocket |
-| **Kotlin** | 9+ | Spring Boot |
-| **YAML** | IaC configurations | |
-| **HCL** | Terraform configurations | |
+| **JavaScript** | 342 | Express.js, React, Vue, GraphQL |
+| **Python** | 341 | Flask, Django, FastAPI, SQLAlchemy, Jinja2 |
+| **Java** | 248 | Spring Boot, JSP, Thymeleaf |
+| **Go** | 173 | Gin, net/http, html/template |
+| **TypeScript** | 128 | Next.js, NestJS, React Server Components |
+| **PHP** | 123 | Laravel, Symfony, Blade, Twig |
+| **C#** | 109 | ASP.NET Core, Razor |
+| **Ruby** | 66 | Ruby on Rails, ERB |
+| **YAML** | 41 | GitHub Actions, IaC / config (Docker, K8s) |
+| **Rust** | 29 | Actix, Axum |
+| **Kotlin** | 18 | Spring Boot, Ktor |
+| **Dockerfile** | 4 | Container build hardening |
+| **JSON** | 3 | package.json / npmrc supply-chain config |
 
 ### Framework-Specific Additions (219 Examples)
 
@@ -396,25 +488,27 @@ The framework additions provide deep, idiomatic security patterns for 9 popular 
 
 | Framework | Language | Examples | Focus Areas |
 |-----------|----------|----------|-------------|
-| **Express.js** | JavaScript | 25 | Middleware security, session handling, CORS |
-| **Django** | Python | 25 | ORM injection, CSRF, template escaping |
-| **Spring Boot** | Java | 25 | Security filters, bean validation, JDBC |
-| **Flask** | Python | 25 | Blueprint security, Werkzeug, Jinja2 |
-| **Ruby on Rails** | Ruby | 24 | Strong parameters, ActiveRecord, Devise |
-| **Laravel** | PHP | 24 | Eloquent security, middleware, Blade |
-| **ASP.NET Core** | C# | 24 | Identity framework, anti-forgery, LINQ |
-| **FastAPI** | Python | 24 | Pydantic validation, OAuth2, dependencies |
-| **NestJS** | TypeScript | 23 | Guards, pipes, interceptors, TypeORM |
+| **Express.js** | JavaScript | 69 | Middleware security, session handling, CORS, auth |
+| **Spring Boot** | Java | 50 | Security filters, bean validation, JDBC, SpEL/deserialization |
+| **React** | JavaScript/TypeScript | 18 | XSS sinks, dangerouslySetInnerHTML, SSR data handling |
+| **Next.js** | TypeScript | 17 | Server-action authz, middleware auth, API routes |
+| **FastAPI** | Python | 16 | Pydantic validation, OAuth2, dependency injection |
+| **GraphQL** | JavaScript | 15 | Authz, introspection, query depth/complexity |
+| **SQLAlchemy** | Python | 14 | ORM injection, raw/text() query safety |
+| **Flask** | Python | 12 | Blueprint security, Werkzeug, Jinja2 |
+| **Vue.js** | JavaScript | 8 | Template injection, v-html, client-side trust |
 
 These framework-specific examples go beyond generic language patterns to demonstrate how each framework's built-in security features should be used correctly, covering framework-native authentication, ORM-specific injection patterns, template engine escaping, middleware security chains, and framework-idiomatic input validation.
 
 ### Severity Distribution
 
+Counts from the released parquet (1,625 examples).
+
 | Severity | Examples | Percentage |
 |----------|----------|------------|
-| **CRITICAL** | ~930 | 64.8% |
-| **HIGH** | ~460 | 32.1% |
-| **MEDIUM** | ~45 | 3.1% |
+| **CRITICAL** | 1085 | 66.8% |
+| **HIGH** | 516 | 31.8% |
+| **MEDIUM** | 24 | 1.5% |
 
 ---
 
@@ -457,11 +551,17 @@ Every example includes:
 
 ## Dataset Structure
 
-The `data/` directory contains individual JSONL files:
-- **Baseline JSONL files** (multi-line JSONL, 1,159 web security examples) - Original v2.0 web examples
-- **219 framework files** (single-JSON JSONL, 219 examples) - Framework-specific additions
+**For almost all users, load the Parquet files** (via `load_dataset`, below). They hold the complete web dataset (baseline + framework additions) in train/validation/test splits of 1,249/186/190 = **1,625 examples**, and back the dataset viewer.
 
-The Parquet files provide the complete web dataset (baseline + framework additions) in train/validation/test splits (1,102/138/138).
+The `data/` directory also keeps the raw source files for humans to browse:
+- **Baseline files** covering the 1,159 web security baseline examples
+- **219 framework files** for the framework-specific additions
+
+Note two things if you parse `data/` directly rather than the Parquet:
+- The source files total **1,626 examples**, one more than the Parquet. The extra one is `sql-injection-000032`, a corrected example staged in `command_injection_batch_007.jsonl` for a future split rebuild; the other 1,625 match the release splits.
+- Despite the `.jsonl` extension, many source files are **pretty-printed multi-line JSON** (one JSON object spanning multiple lines), not line-delimited JSON. A naive line-by-line `json.loads(line)` will fail on them; see the loader below.
+
+> **`id` is not a unique key.** Example ids restart per batch file, so the same id (e.g. `authentication-000002`) appears on many distinct examples. There are only ~405 unique ids across the dataset. Deduplicate by row/content, never by `id`.
 
 ### Example Format
 
@@ -504,7 +604,7 @@ Each example is a 4-turn conversation in JSON format:
 ```python
 from datasets import load_dataset
 
-# Load the dataset (parquet splits - v2.0 baseline)
+# Load the complete dataset (1,625 examples)
 dataset = load_dataset("scthornton/securecode-web")
 
 # Access splits
@@ -516,22 +616,42 @@ test_data = dataset["test"]
 print(train_data[0]["id"])
 ```
 
-### Load All Examples (Including Framework Additions)
+The Parquet splits already include the framework additions; `load_dataset` is all
+most users need.
+
+### Loading the raw source files in `data/`
+
+Only needed if you want the 7 unreleased correction rows or prefer the raw files.
+Many files are pretty-printed multi-line JSON despite the `.jsonl` extension, so
+parse each file as a whole with a streaming decoder rather than line by line:
 
 ```python
 import json
 from pathlib import Path
 
-# Clone the repo first, then load all JSONL files
+def load_any(path):
+    """Yield objects from a file that is either JSONL or pretty-printed JSON."""
+    text = Path(path).read_text()
+    # Fast path: line-delimited JSON
+    try:
+        return [json.loads(line) for line in text.splitlines() if line.strip()]
+    except json.JSONDecodeError:
+        pass
+    # Whole-file: a single object, an array, or concatenated pretty objects
+    dec, idx, out, s = json.JSONDecoder(), 0, [], text.strip()
+    while idx < len(s):
+        obj, end = dec.raw_decode(s, idx)
+        out.append(obj)
+        idx = end
+        while idx < len(s) and s[idx] in " \r\n\t":
+            idx += 1
+    return out
+
 examples = []
 for path in Path("data").glob("*.jsonl"):
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                examples.append(json.loads(line))
+    examples.extend(load_any(path))
 
-print(f"Loaded {len(examples)} examples")  # 1,378
+print(f"Loaded {len(examples)} examples")  # 1,379
 ```
 
 ### Fine-Tuning Example
@@ -543,12 +663,16 @@ model_name = "meta-llama/Llama-3.2-3B"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
-# Prepare dataset for training
+# Prepare dataset for training.
+# Conversations live under "conversations" as {turn, from, value} with
+# from in {human, assistant}; convert to the {role, content} the chat template expects.
 def format_conversation(example):
-    formatted = tokenizer.apply_chat_template(
-        example["messages"],
-        tokenize=False
-    )
+    messages = [
+        {"role": "user" if turn["from"] == "human" else "assistant",
+         "content": turn["value"]}
+        for turn in example["conversations"]
+    ]
+    formatted = tokenizer.apply_chat_template(messages, tokenize=False)
     return {"text": formatted}
 
 train_dataset = dataset["train"].map(format_conversation)
@@ -603,10 +727,9 @@ This dataset is released under the **Creative Commons Attribution-NonCommercial-
 - **Model Collection**: [https://huggingface.co/collections/scthornton/securecode](https://huggingface.co/collections/scthornton/securecode) (8 trained models)
 - **Blog Post**: [https://huggingface.co/blog/scthornton/securecode-models](https://huggingface.co/blog/scthornton/securecode-models)
 - **GitHub Repository**: [https://github.com/scthornton/securecode-web](https://github.com/scthornton/securecode-web)
-- **This Dataset**: [https://huggingface.co/datasets/scthornton/securecode-web](https://huggingface.co/datasets/scthornton/securecode-web) (1,378 web security examples)
+- **This Dataset**: [https://huggingface.co/datasets/scthornton/securecode-web](https://huggingface.co/datasets/scthornton/securecode-web) (1,625 web security examples)
 - **Unified Dataset**: [https://huggingface.co/datasets/scthornton/securecode](https://huggingface.co/datasets/scthornton/securecode) (all 2,185 examples)
 - **AI/ML Security**: [https://huggingface.co/datasets/scthornton/securecode-aiml](https://huggingface.co/datasets/scthornton/securecode-aiml) (750 AI/ML examples)
-- **Original v2.0 Baseline**: [https://huggingface.co/datasets/scthornton/securecode-v2](https://huggingface.co/datasets/scthornton/securecode-v2) (1,209 baseline examples)
 
 ---
 
@@ -633,10 +756,10 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines 
 
 | Metric | Result |
 |--------|--------|
-| CVE Format Compliance | 100% |
+| CVE Format Compliance | 100% (all CVE values well-formed) |
 | Language Tag Validity | 100% |
 | Content Quality Standards | 100% |
-| 4-Turn Structure Compliance | 100% |
-| Incident Grounding | 100% (all examples tied to real incidents) |
+| 4-Turn Structure Compliance | 99.9% (1,624 / 1,625; one 6-turn example) |
+| Incident Grounding | 100% (every example has a real_world_incident; ~82% additionally carry a CVE) |
 | Expert Security Review | Complete (3 independent validators for baseline) |
 | Content Deduplication | 1,203 duplicates removed from baseline |

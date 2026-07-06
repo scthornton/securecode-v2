@@ -1,11 +1,12 @@
 # Phase 1 Progress — v2.1 Metadata Enrichment
 
 ## Status
-- **Phase**: 1 (v2.1 metadata enrichment)
-- **Branch**: `phase-1-metadata`
+- **Phase**: 1 (v2.1 metadata enrichment) — **SHIPPED 2026-04-25**
+- **Branch**: `phase-1-metadata` (merged to main and tagged)
 - **Started**: 2026-04-25
-- **Current task**: GitHub PR ready to push (Task #26 — awaiting Scott approval)
-- **% complete**: ~95%
+- **Shipped**: 2026-04-25
+- **Current task**: Phase 1 complete
+- **% complete**: 100%
 - **Cloud budget**: $0 (Phase 1 used only free APIs)
 - **Opus review budget**: ~$0 used (Scott was checkpoint reviewer; Opus assistance minimal in Phase 1 since work was deterministic/automated)
 - **NVD API key**: ✓ activated and stored in shell rc files
@@ -80,4 +81,9 @@
 - **Commits on phase-1-metadata branch**: 7 (excluding initial plan commit)
 
 ## Next checkpoint target
-- **GitHub PR push** — Scott approves the push. PR URL captured. Phase 1 closes after PR merge.
+- (none — Phase 1 closed)
+
+## Phase 1 release record (2026-04-25)
+- **GitHub**: PR #3 squash-merged to main as commit `7adb660`. PR URL: https://github.com/scthornton/securecode-web/pull/3
+- **Hugging Face**: pushed `phase-1-metadata` → `main` (commit `90d3275`). Tagged as `v2.1.0` (tag commit `2036fcd`). Verified live via `load_dataset(..., revision="v2.1.0")` returning enriched data.
+- **GitHub tag push**: rejected by secret scanner (ancestor commits contain pre-existing fake test keys); not blocking since HF is the user-facing release. Tag exists locally and on HF.
